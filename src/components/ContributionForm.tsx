@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { parseMpesaMessage } from "@/utils/mpesaParser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
 
 export function ContributionForm() {
   const { toast } = useToast();
@@ -19,6 +20,10 @@ export function ContributionForm() {
   const [mpesaMessage, setMpesaMessage] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
 
+  // Simulated values - in a real app these would come from your backend
+  const memberCount = 15; // Example: group has 15 members
+  const membershipDays = 200; // Example: member has been active for 200 days
+
   const handleMpesaMessageParse = () => {
     const parsedMessage = parseMpesaMessage(mpesaMessage);
     if (parsedMessage) {
@@ -28,9 +33,16 @@ export function ContributionForm() {
         amount: parsedMessage.amount.toString(),
         transactionId: parsedMessage.transactionId,
       });
+
+      // Calculate and show the transaction fee with loyalty discount
+      const baseAmount = parseFloat(parsedMessage.amount.toString());
+      const baseFee = calculateTransactionFee(baseAmount, memberCount);
+      const loyaltyDiscount = getLoyaltyDiscount(membershipDays);
+      const finalFee = baseFee * (1 - loyaltyDiscount);
+
       toast({
         title: "Success!",
-        description: "M-Pesa message parsed successfully",
+        description: `M-Pesa message parsed successfully. Transaction fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
       });
     } else {
       toast({
@@ -53,9 +65,14 @@ export function ContributionForm() {
       return;
     }
 
+    const amount = parseFloat(formData.amount);
+    const baseFee = calculateTransactionFee(amount, memberCount);
+    const loyaltyDiscount = getLoyaltyDiscount(membershipDays);
+    const finalFee = baseFee * (1 - loyaltyDiscount);
+
     toast({
       title: "Success!",
-      description: "Contribution recorded successfully",
+      description: `Contribution recorded successfully. Transaction fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
     });
 
     setFormData({
@@ -78,10 +95,10 @@ export function ContributionForm() {
       return;
     }
 
-    // In a real app, this would send an invitation email
+    // In a real app, this would verify the email against existing members
     toast({
       title: "Invitation Sent!",
-      description: "An invitation has been sent to " + inviteEmail,
+      description: `An invitation has been sent to ${inviteEmail}. New members get a special 5% discount on their first contribution!`,
     });
     setInviteEmail("");
   };
