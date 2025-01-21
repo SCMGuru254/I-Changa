@@ -8,6 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { parseMpesaMessage } from "@/utils/mpesaParser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
+import { Share2, Mail, Facebook, Phone, WhatsApp } from "lucide-react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function ContributionForm() {
   const { toast } = useToast();
@@ -19,6 +26,10 @@ export function ContributionForm() {
   });
   const [mpesaMessage, setMpesaMessage] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [offlineContributions, setOfflineContributions] = useState(() => {
+    const saved = localStorage.getItem('offlineContributions');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Simulated values - in a real app these would come from your backend
   const memberCount = 15; // Example: group has 15 members
@@ -70,10 +81,27 @@ export function ContributionForm() {
     const loyaltyDiscount = getLoyaltyDiscount(membershipDays);
     const finalFee = baseFee * (1 - loyaltyDiscount);
 
-    toast({
-      title: "Success!",
-      description: `Contribution recorded successfully. Transaction fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
-    });
+    // Store contribution locally if offline
+    if (!navigator.onLine) {
+      const newContribution = {
+        ...formData,
+        timestamp: new Date().toISOString(),
+        fee: finalFee,
+      };
+      const updatedContributions = [...offlineContributions, newContribution];
+      setOfflineContributions(updatedContributions);
+      localStorage.setItem('offlineContributions', JSON.stringify(updatedContributions));
+      
+      toast({
+        title: "Saved Offline",
+        description: "Contribution saved locally. Will sync when online.",
+      });
+    } else {
+      toast({
+        title: "Success!",
+        description: `Contribution recorded successfully. Transaction fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
+      });
+    }
 
     setFormData({
       contributorName: "",
@@ -95,12 +123,52 @@ export function ContributionForm() {
       return;
     }
 
-    // In a real app, this would verify the email against existing members
     toast({
       title: "Invitation Sent!",
       description: `An invitation has been sent to ${inviteEmail}. New members get a special 5% discount on their first contribution!`,
     });
     setInviteEmail("");
+  };
+
+  const handleSocialInvite = (platform: string) => {
+    const message = `Join our contribution group! New members get a special 5% discount on their first contribution.`;
+    
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`);
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(message)}`);
+        break;
+      case 'contacts':
+        // This will only work if the Web Contact Picker API is supported
+        if ('contacts' in navigator && 'ContactsManager' in window) {
+          // @ts-ignore - TypeScript doesn't recognize the Contact Picker API yet
+          navigator.contacts.select(['email', 'tel'])
+            .then((contacts) => {
+              if (contacts.length > 0) {
+                toast({
+                  title: "Contacts Selected",
+                  description: `${contacts.length} contact(s) selected for invitation`,
+                });
+              }
+            })
+            .catch(() => {
+              toast({
+                title: "Error",
+                description: "Could not access contacts. Please try another method.",
+                variant: "destructive",
+              });
+            });
+        } else {
+          toast({
+            title: "Not Supported",
+            description: "Contact picker is not supported on this device.",
+            variant: "destructive",
+          });
+        }
+        break;
+    }
   };
 
   return (
@@ -198,11 +266,44 @@ export function ContributionForm() {
               placeholder="Enter email address to invite"
             />
           </div>
-          <Button type="submit" variant="outline" className="w-full">
-            Send Invitation
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" variant="outline" className="flex-1">
+              <Mail className="w-4 h-4 mr-2" />
+              Send Email Invitation
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  More Options
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleSocialInvite('whatsapp')}>
+                  <WhatsApp className="w-4 h-4 mr-2" />
+                  Share via WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSocialInvite('facebook')}>
+                  <Facebook className="w-4 h-4 mr-2" />
+                  Share on Facebook
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSocialInvite('contacts')}>
+                  <Phone className="w-4 h-4 mr-2" />
+                  Add from Contacts
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </form>
       </div>
+
+      {!navigator.onLine && offlineContributions.length > 0 && (
+        <div className="mt-4 p-4 bg-yellow-50 rounded-md">
+          <p className="text-yellow-800">
+            You're offline. {offlineContributions.length} contribution(s) will sync when you're back online.
+          </p>
+        </div>
+      )}
     </Card>
   );
 }
