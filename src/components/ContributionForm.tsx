@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { parseMpesaMessage } from "@/utils/mpesaParser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
-import { Share2, Mail, Facebook, Phone, WhatsApp } from "lucide-react";
+import { Share2, Mail, Facebook, Phone } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -280,7 +280,7 @@ export function ContributionForm() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => handleSocialInvite('whatsapp')}>
-                  <WhatsApp className="w-4 h-4 mr-2" />
+                  <Share2 className="w-4 h-4 mr-2" />
                   Share via WhatsApp
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSocialInvite('facebook')}>
