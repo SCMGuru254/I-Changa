@@ -28,7 +28,10 @@ export const PRICING_TIERS: PricingTier[] = [
 ];
 
 export const calculateTransactionFee = (amount: number, memberCount: number): number => {
-  const tier = PRICING_TIERS.findLast(tier => memberCount >= tier.minMembers) || PRICING_TIERS[0];
+  // Find the last matching tier by reversing the array and finding the first match
+  const tier = [...PRICING_TIERS]
+    .reverse()
+    .find(tier => memberCount >= tier.minMembers) || PRICING_TIERS[0];
   return (amount * tier.feePercentage) / 100;
 };
 
