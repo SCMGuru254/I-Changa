@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Member } from "@/types";
+import { Member, MemberRole } from "@/types";
 import { Crown, Trophy, Medal } from "lucide-react";
 
 // Dummy data for demonstration
