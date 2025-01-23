@@ -3,6 +3,7 @@ import { ContributionForm } from "@/components/ContributionForm";
 import { ContributionsList } from "@/components/ContributionsList";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ContributionCalendar } from "@/components/ContributionCalendar";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -11,6 +12,7 @@ const Index = () => {
   useEffect(() => {
     // Anti-screenshot measures
     const preventScreenCapture = () => {
+      // Disable keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's')) {
           e.preventDefault();
@@ -31,6 +33,20 @@ const Index = () => {
           variant: "destructive",
         });
       });
+
+      // Add visual watermark
+      const watermark = document.createElement('div');
+      watermark.style.position = 'fixed';
+      watermark.style.top = '50%';
+      watermark.style.left = '50%';
+      watermark.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
+      watermark.style.fontSize = '24px';
+      watermark.style.color = 'rgba(128, 128, 128, 0.1)';
+      watermark.style.pointerEvents = 'none';
+      watermark.style.userSelect = 'none';
+      watermark.style.zIndex = '9999';
+      watermark.textContent = 'iChanga - Secure Platform';
+      document.body.appendChild(watermark);
     };
 
     preventScreenCapture();
@@ -40,15 +56,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <div className="container py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-primary mb-2">
-              iChanga
-            </h1>
-            <p className="text-gray-600">
-              Simplified Group Contributions with M-Pesa Integration
-            </p>
-          </div>
-
+          <DashboardHeader />
           <DashboardStats />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
