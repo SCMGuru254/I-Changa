@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 interface InviteSectionProps {
   inviteEmail: string;
@@ -17,9 +18,32 @@ interface InviteSectionProps {
 
 export function InviteSection({ inviteEmail, setInviteEmail }: InviteSectionProps) {
   const { toast } = useToast();
+  const [inviteCount, setInviteCount] = useState(0);
+  const [lastInviteTime, setLastInviteTime] = useState(0);
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic spam prevention
+    const now = Date.now();
+    if (now - lastInviteTime < 60000) { // 1 minute cooldown
+      toast({
+        title: "Please wait",
+        description: "Please wait a minute before sending another invitation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (inviteCount >= 10) { // Daily limit
+      toast({
+        title: "Daily limit reached",
+        description: "You've reached the maximum number of invites for today",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!inviteEmail) {
       toast({
         title: "Error",
@@ -28,6 +52,20 @@ export function InviteSection({ inviteEmail, setInviteEmail }: InviteSectionProp
       });
       return;
     }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setInviteCount(prev => prev + 1);
+    setLastInviteTime(now);
 
     toast({
       title: "Invitation Sent!",
