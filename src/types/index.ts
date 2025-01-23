@@ -15,3 +15,14 @@ export interface Group {
   target?: number;
   totalContributions: number;
 }
+
+export type MemberRole = 'admin' | 'treasurer' | 'member';
+
+export interface Member {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  role: MemberRole;
+  joinedAt: string;
+  totalContributions: number;
+}

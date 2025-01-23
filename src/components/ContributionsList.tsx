@@ -2,32 +2,68 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Contribution } from "@/types";
+import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-// Dummy data for demonstration
-const dummyContributions: Contribution[] = [
-  {
-    id: "1",
-    amount: 1000,
-    contributorName: "John Doe",
-    phoneNumber: "+254712345678",
-    date: "2024-02-20",
-    transactionId: "QWE123456",
-    groupId: "1",
-  },
-  {
-    id: "2",
-    amount: 2000,
-    contributorName: "Jane Smith",
-    phoneNumber: "+254723456789",
-    date: "2024-02-19",
-    transactionId: "ASD789012",
-    groupId: "1",
-  },
-];
+// Simulated API call
+const fetchContributions = async (): Promise<Contribution[]> => {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Dummy data for demonstration
+  return [
+    {
+      id: "1",
+      amount: 1000,
+      contributorName: "John Doe",
+      phoneNumber: "+254712345678",
+      date: "2024-02-20",
+      transactionId: "QWE123456",
+      groupId: "1",
+    },
+    {
+      id: "2",
+      amount: 2000,
+      contributorName: "Jane Smith",
+      phoneNumber: "+254723456789",
+      date: "2024-02-19",
+      transactionId: "ASD789012",
+      groupId: "1",
+    },
+  ];
+};
 
 export function ContributionsList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [contributions] = useState<Contribution[]>(dummyContributions);
+  
+  const { data: contributions, isLoading, error } = useQuery({
+    queryKey: ['contributions'],
+    queryFn: fetchContributions,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6 text-center text-red-500">
+        <p>Error loading contributions. Please try again later.</p>
+      </Card>
+    );
+  }
+
+  if (!contributions?.length) {
+    return (
+      <Card className="p-6 text-center text-muted-foreground">
+        <p>No contributions found.</p>
+      </Card>
+    );
+  }
 
   const filteredContributions = contributions.filter(
     (contribution) =>
@@ -48,20 +84,20 @@ export function ContributionsList() {
 
       <div className="space-y-4">
         {filteredContributions.map((contribution) => (
-          <Card key={contribution.id} className="p-4">
+          <Card key={contribution.id} className="p-4 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold">{contribution.contributorName}</h3>
-                <p className="text-sm text-gray-500">{contribution.phoneNumber}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">{contribution.phoneNumber}</p>
+                <p className="text-sm text-muted-foreground">
                   Transaction ID: {contribution.transactionId}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-secondary">
+                <p className="text-lg font-bold text-primary">
                   KES {contribution.amount.toLocaleString()}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {new Date(contribution.date).toLocaleDateString()}
                 </p>
               </div>
