@@ -4,6 +4,7 @@ import { ContributionsList } from "@/components/ContributionsList";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ContributionCalendar } from "@/components/ContributionCalendar";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { GroupAgenda } from "@/components/GroupAgenda";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -57,6 +58,7 @@ const Index = () => {
       <div className="container py-8">
         <div className="max-w-6xl mx-auto">
           <DashboardHeader />
+          <GroupAgenda />
           <DashboardStats />
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
