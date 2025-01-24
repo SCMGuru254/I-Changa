@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, FileDown } from "lucide-react";
-import { generatePDF } from "react-to-pdf";
+import generatePDF from "react-to-pdf";
 import { calculateRevenue } from "@/utils/pricingUtils";
 
 interface GroupManagementProps {
