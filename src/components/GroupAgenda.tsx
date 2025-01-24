@@ -6,7 +6,7 @@ export function GroupAgenda() {
   const groupInfo = {
     name: "Medical Fund",
     agenda: "Supporting our colleague John's medical expenses for his upcoming surgery. Target: KES 100,000. Timeline: 2 months.",
-    image: "/placeholder.svg", // Using the existing placeholder image
+    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742", // Updated to use an appropriate medical-themed image
     admin: "Sarah Kamau",
     lastUpdated: "2024-02-20",
   };
@@ -21,13 +21,16 @@ export function GroupAgenda() {
         <div className="md:w-1/3">
           <img
             src={groupInfo.image}
-            alt="Group purpose illustration"
+            alt="Medical facility representing our fund's purpose"
             className="rounded-lg w-full h-48 object-cover"
           />
         </div>
         
         <div className="md:w-2/3">
-          <h2 className="text-2xl font-semibold text-primary mb-2">{groupInfo.name}</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <AppLogo className="h-8 w-8" />
+            <h2 className="text-2xl font-semibold text-primary">{groupInfo.name}</h2>
+          </div>
           <p className="text-gray-600 mb-4 leading-relaxed">{groupInfo.agenda}</p>
           
           <div className="flex items-center justify-between text-sm text-gray-500">
@@ -37,5 +40,14 @@ export function GroupAgenda() {
         </div>
       </div>
     </Card>
+  );
+}
+
+// Simple logo component using the existing design system
+function AppLogo({ className = "" }: { className?: string }) {
+  return (
+    <div className={`bg-primary rounded-lg p-2 text-white font-bold ${className}`}>
+      iC
+    </div>
   );
 }
