@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ export function GroupManagement({
 }: GroupManagementProps) {
   const { toast } = useToast();
   const [isLeaving, setIsLeaving] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const handleLeaveGroup = async () => {
     setIsLeaving(true);
@@ -70,36 +71,8 @@ export function GroupManagement({
     };
 
     try {
-      const reportContent = () => (
-        <div className="p-8">
-          <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
-          <div className="mb-4">
-            <p>Total Contributed: KES {totalContributed.toLocaleString()}</p>
-            <p>Target Amount: KES {targetAmount.toLocaleString()}</p>
-            <p>Total Revenue Generated: KES {totalRevenue.toLocaleString()}</p>
-          </div>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="border p-2">Contributor</th>
-                <th className="border p-2">Amount</th>
-                <th className="border p-2">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contributions.map((contribution, index) => (
-                <tr key={index}>
-                  <td className="border p-2">{contribution.contributorName}</td>
-                  <td className="border p-2">KES {contribution.amount.toLocaleString()}</td>
-                  <td className="border p-2">{new Date(contribution.date).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-
-      await generatePDF(reportContent, options);
+      const getTargetElement = () => reportRef.current;
+      await generatePDF(getTargetElement, options);
 
       toast({
         title: "Success",
@@ -145,6 +118,35 @@ export function GroupManagement({
             As an admin, you cannot leave the group. Please assign another admin first.
           </p>
         )}
+
+        <div ref={reportRef} className="hidden">
+          <div className="p-8">
+            <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
+            <div className="mb-4">
+              <p>Total Contributed: KES {contributions.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}</p>
+              <p>Target Amount: KES {targetAmount.toLocaleString()}</p>
+              <p>Total Revenue Generated: KES {calculateRevenue(contributions).toLocaleString()}</p>
+            </div>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="border p-2">Contributor</th>
+                  <th className="border p-2">Amount</th>
+                  <th className="border p-2">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contributions.map((contribution, index) => (
+                  <tr key={index}>
+                    <td className="border p-2">{contribution.contributorName}</td>
+                    <td className="border p-2">KES {contribution.amount.toLocaleString()}</td>
+                    <td className="border p-2">{new Date(contribution.date).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </Card>
   );
