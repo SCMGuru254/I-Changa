@@ -70,7 +70,7 @@ export function GroupManagement({
     };
 
     try {
-      await generatePDF(
+      const reportContent = () => (
         <div className="p-8">
           <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
           <div className="mb-4">
@@ -96,9 +96,10 @@ export function GroupManagement({
               ))}
             </tbody>
           </table>
-        </div>,
-        options
+        </div>
       );
+
+      await generatePDF(reportContent, options);
 
       toast({
         title: "Success",
