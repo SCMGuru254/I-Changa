@@ -6,6 +6,7 @@ import { ContributionCalendar } from "@/components/ContributionCalendar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { GroupAgenda } from "@/components/GroupAgenda";
 import { MemberLeaderboard } from "@/components/MemberLeaderboard";
+import { AdminWallet } from "@/components/AdminWallet";
 import { useToast } from "@/hooks/use-toast";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { Button } from "@/components/ui/button";
 const Index = () => {
   const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  // In a real app, this would come from your auth system
+  const isAdmin = true; 
 
   useEffect(() => {
     // Check system preference
@@ -86,6 +89,12 @@ const Index = () => {
 
           <GroupAgenda />
           <DashboardStats />
+
+          {isAdmin && (
+            <div className="mb-8">
+              <AdminWallet />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-4 space-y-6">
