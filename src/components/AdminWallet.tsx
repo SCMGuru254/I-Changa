@@ -9,8 +9,8 @@ export function AdminWallet() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   
   // In a real app, these would come from your backend
-  const walletBalance = 2500; // Total accumulated fees
-  const pendingFees = 150; // Fees from recent transactions
+  const walletBalance: number = 2500; // Total accumulated fees
+  const pendingFees: number = 150; // Fees from recent transactions
   
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
