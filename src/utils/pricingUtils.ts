@@ -7,28 +7,27 @@ export interface PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
   {
     minMembers: 1,
-    feePercentage: 2.5, // Higher fee for very small groups
+    feePercentage: 2.5,
     description: "Basic (1-4 members)"
   },
   {
     minMembers: 5,
-    feePercentage: 1.5, // Medium fee for small groups
+    feePercentage: 1.5,
     description: "Standard (5-9 members)"
   },
   {
     minMembers: 10,
-    feePercentage: 0.75, // Lower fee for medium groups
+    feePercentage: 0.75,
     description: "Premium (10+ members)"
   },
   {
     minMembers: 25,
-    feePercentage: 0.5, // Lowest fee for large groups
+    feePercentage: 0.5,
     description: "Enterprise (25+ members)"
   }
 ];
 
 export const calculateTransactionFee = (amount: number, memberCount: number): number => {
-  // Find the last matching tier by reversing the array and finding the first match
   const tier = [...PRICING_TIERS]
     .reverse()
     .find(tier => memberCount >= tier.minMembers) || PRICING_TIERS[0];
@@ -36,8 +35,15 @@ export const calculateTransactionFee = (amount: number, memberCount: number): nu
 };
 
 export const getLoyaltyDiscount = (membershipDays: number): number => {
-  if (membershipDays >= 365) return 0.5; // 50% discount after 1 year
-  if (membershipDays >= 180) return 0.25; // 25% discount after 6 months
-  if (membershipDays >= 90) return 0.1; // 10% discount after 3 months
+  if (membershipDays >= 365) return 0.5;
+  if (membershipDays >= 180) return 0.25;
+  if (membershipDays >= 90) return 0.1;
   return 0;
+};
+
+export const calculateRevenue = (contributions: { amount: number; memberCount: number }[]): number => {
+  return contributions.reduce((total, contribution) => {
+    const fee = calculateTransactionFee(contribution.amount, contribution.memberCount);
+    return total + fee;
+  }, 0);
 };

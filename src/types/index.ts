@@ -14,6 +14,8 @@ export interface Group {
   description: string;
   target?: number;
   totalContributions: number;
+  endDate: string;
+  status: 'active' | 'completed' | 'expired';
 }
 
 export type MemberRole = 'admin' | 'treasurer' | 'member';
@@ -25,4 +27,10 @@ export interface Member {
   role: MemberRole;
   joinedAt: string;
   totalContributions: number;
+}
+
+export interface GroupMember extends Member {
+  groupId: string;
+  status: 'active' | 'left';
+  leftAt?: string;
 }
