@@ -110,21 +110,21 @@ const Index = () => {
               </Button>
             </div>
           </div>
+          
+          {user?.email === "olivedataetsula@gmail.com" && (
+            <div className="mb-8">
+              <OwnerDashboard />
+            </div>
+          )}
 
           <GroupAgenda />
           <DashboardStats />
 
-          {userRole === 'owner' && (
-            <div className="mb-8">
-              <OwnerWallet userRole={userRole} />
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-4 space-y-6">
               <div>
-                <h2 className="text-xl font-semibold mb-4 text-primary">New Contribution</h2>
-                <ContributionForm />
+                <h2 className="text-xl font-semibold mb-4 text-primary">New Group</h2>
+                <GroupCreationForm />
               </div>
               <div>
                 <ContributionCalendar />

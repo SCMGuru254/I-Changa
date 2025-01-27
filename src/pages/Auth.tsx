@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,6 +24,11 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
+      const captchaToken = await recaptchaRef.current?.executeAsync();
+      if (!captchaToken) {
+        throw new Error("Please complete the captcha");
+      }
+
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email: formData.email,
@@ -55,6 +62,7 @@ export default function Auth() {
       });
     } finally {
       setIsLoading(false);
+      recaptchaRef.current?.reset();
     }
   };
 
@@ -88,6 +96,11 @@ export default function Auth() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
+          />
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            size="invisible"
+            sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY || ""}
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading
