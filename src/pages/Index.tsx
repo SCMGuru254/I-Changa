@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ContributionForm } from "@/components/ContributionForm";
 import { ContributionsList } from "@/components/ContributionsList";
 import { DashboardStats } from "@/components/DashboardStats";
@@ -10,23 +11,27 @@ import { OwnerWallet } from "@/components/OwnerWallet";
 import { useToast } from "@/hooks/use-toast";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  // In a real app, this would come from your auth system
   const userRole: 'owner' | 'admin' | 'treasurer' | 'member' = 'owner';
 
   useEffect(() => {
-    // Check system preference
+    if (!user) {
+      navigate("/auth");
+    }
+
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
     }
 
-    // Anti-screenshot measures
     const preventScreenCapture = () => {
-      // Disable keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's')) {
           e.preventDefault();
@@ -38,7 +43,6 @@ const Index = () => {
         }
       });
 
-      // Disable right-click
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         toast({
@@ -48,7 +52,6 @@ const Index = () => {
         });
       });
 
-      // Add visual watermark
       const watermark = document.createElement('div');
       watermark.style.position = 'fixed';
       watermark.style.top = '50%';
@@ -64,11 +67,24 @@ const Index = () => {
     };
 
     preventScreenCapture();
-  }, [toast]);
+  }, [toast, navigate, user]);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/auth");
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -77,14 +93,22 @@ const Index = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <DashboardHeader />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleDarkMode}
-              className="rounded-full"
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleDarkMode}
+                className="rounded-full"
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
 
           <GroupAgenda />
