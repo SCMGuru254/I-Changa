@@ -100,7 +100,7 @@ export default function Auth() {
           <ReCAPTCHA
             ref={recaptchaRef}
             size="invisible"
-            sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY || ""}
+            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ""}
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading
