@@ -7,24 +7,53 @@ interface ParsedMpesaMessage {
 }
 
 export const parseMpesaMessage = (message: string): ParsedMpesaMessage | null => {
-  // Example message: TAJ1RBVSYF Confirmed.You have received Ksh30.00 from MOHAMMED AGESA 0722370253 on 19/1/25 at 4:37 PM
   try {
-    const transactionIdMatch = message.match(/^([A-Z0-9]+)/);
-    const amountMatch = message.match(/Ksh([\d,.]+)/);
-    const nameMatch = message.match(/from ([A-Z\s]+)/);
-    const phoneMatch = message.match(/(\d{10})/);
-    const dateMatch = message.match(/on (\d{1,2}\/\d{1,2}\/\d{2})/);
+    // Handle different M-Pesa message formats
+    const patterns = {
+      transactionId: /([A-Z0-9]{8,12})/,
+      amount: /Ksh[.,\s]*(\d+[.,]?\d*)/i,
+      phoneNumber: /(\d{10,12})/,
+      date: /(\d{1,2}\/\d{1,2}\/\d{2,4})|(\d{1,2}-\d{1,2}-\d{2,4})/,
+    };
 
-    if (!transactionIdMatch || !amountMatch || !nameMatch || !phoneMatch || !dateMatch) {
+    // Extract transaction ID (usually at start or after "Confirmed")
+    const transactionIdMatch = message.match(patterns.transactionId);
+    
+    // Extract amount (handle different formats like "Ksh", "KES", with/without decimals)
+    const amountMatch = message.match(patterns.amount);
+    
+    // Extract phone number
+    const phoneMatch = message.match(patterns.phoneNumber);
+    
+    // Extract date
+    const dateMatch = message.match(patterns.date);
+
+    // Extract name (between "from" and phone number or date)
+    const nameMatch = message.match(/from\s+([A-Z\s]+(?=\s+\d))/i) || 
+                     message.match(/received\s+from\s+([A-Z\s]+(?=\s+\d))/i);
+
+    if (!transactionIdMatch || !amountMatch || !phoneMatch) {
+      console.log("Failed to parse M-Pesa message:", { 
+        transactionId: transactionIdMatch,
+        amount: amountMatch,
+        phone: phoneMatch,
+        name: nameMatch,
+        date: dateMatch
+      });
       return null;
     }
 
+    // Clean and format the extracted data
+    const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+    const contributorName = nameMatch ? nameMatch[1].trim() : "Unknown";
+    const date = dateMatch ? dateMatch[0] : new Date().toLocaleDateString();
+
     return {
       transactionId: transactionIdMatch[1],
-      amount: parseFloat(amountMatch[1].replace(',', '')),
-      contributorName: nameMatch[1].trim(),
-      phoneNumber: phoneMatch[1],
-      date: dateMatch[1],
+      amount,
+      contributorName,
+      phoneNumber: phoneMatch[0],
+      date,
     };
   } catch (error) {
     console.error('Error parsing M-Pesa message:', error);
