@@ -8,6 +8,8 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { GroupAgenda } from "@/components/GroupAgenda";
 import { MemberLeaderboard } from "@/components/MemberLeaderboard";
 import { OwnerWallet } from "@/components/OwnerWallet";
+import { OwnerDashboard } from "@/components/OwnerDashboard";
+import { GroupCreationForm } from "@/components/GroupCreationForm";
 import { useToast } from "@/hooks/use-toast";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
