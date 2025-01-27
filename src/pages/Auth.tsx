@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import ReCAPTCHA from "react-google-recaptcha";
 
+// Test site key from Google's documentation - use this for development
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -100,7 +103,7 @@ export default function Auth() {
           <ReCAPTCHA
             ref={recaptchaRef}
             size="invisible"
-            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ""}
+            sitekey={RECAPTCHA_SITE_KEY}
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading
