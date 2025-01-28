@@ -2,11 +2,10 @@ import { Card } from "@/components/ui/card";
 import { Pin } from "lucide-react";
 
 export function GroupAgenda() {
-  // In a real app, this would come from your backend
   const groupInfo = {
     name: "Medical Fund",
     agenda: "Supporting our colleague John's medical expenses for his upcoming surgery. Target: KES 100,000. Timeline: 2 months.",
-    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742", // Updated to use an appropriate medical-themed image
+    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742",
     admin: "Sarah Kamau",
     lastUpdated: "2024-02-20",
   };
@@ -43,7 +42,6 @@ export function GroupAgenda() {
   );
 }
 
-// Simple logo component using the existing design system
 function AppLogo({ className = "" }: { className?: string }) {
   return (
     <div className={`bg-primary rounded-lg p-2 text-white font-bold ${className}`}>

@@ -9,6 +9,7 @@ import { InviteSection } from "./contribution/InviteSection";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { parseMpesaMessage } from "@/utils/mpesaParser";
 
 export function ContributionForm() {
   const { groupId } = useParams();
@@ -66,6 +67,28 @@ export function ContributionForm() {
     }
   };
 
+  const handleMpesaMessageParse = (message: string) => {
+    const parsedMessage = parseMpesaMessage(message);
+    if (parsedMessage) {
+      setFormData({
+        contributorName: parsedMessage.contributorName,
+        phoneNumber: parsedMessage.phoneNumber,
+        amount: parsedMessage.amount.toString(),
+        transactionId: parsedMessage.transactionId,
+      });
+      toast({
+        title: "Success",
+        description: "M-Pesa message parsed successfully",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Could not parse M-Pesa message. Please check the format.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="p-6">
       <Tabs defaultValue="manual" className="space-y-4">
@@ -88,6 +111,7 @@ export function ContributionForm() {
             mpesaMessage={mpesaMessage}
             setMpesaMessage={setMpesaMessage}
             setFormData={setFormData}
+            onParse={handleMpesaMessageParse}
             memberCount={15}
             membershipDays={200}
           />

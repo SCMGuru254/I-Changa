@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { parseMpesaMessage } from "@/utils/mpesaParser";
 import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
 
 interface MpesaMessageInputProps {
   mpesaMessage: string;
   setMpesaMessage: (message: string) => void;
   setFormData: (data: any) => void;
+  onParse: (message: string) => void;
   memberCount: number;
   membershipDays: number;
 }
@@ -16,7 +16,7 @@ interface MpesaMessageInputProps {
 export function MpesaMessageInput({
   mpesaMessage,
   setMpesaMessage,
-  setFormData,
+  onParse,
   memberCount,
   membershipDays,
 }: MpesaMessageInputProps) {
@@ -32,36 +32,7 @@ export function MpesaMessageInput({
       return;
     }
 
-    const parsedMessage = parseMpesaMessage(mpesaMessage);
-    
-    if (parsedMessage) {
-      setFormData({
-        contributorName: parsedMessage.contributorName,
-        phoneNumber: parsedMessage.phoneNumber,
-        amount: parsedMessage.amount.toString(),
-        transactionId: parsedMessage.transactionId,
-      });
-
-      const baseAmount = parsedMessage.amount;
-      const baseFee = calculateTransactionFee(baseAmount, memberCount);
-      const loyaltyDiscount = getLoyaltyDiscount(membershipDays);
-      const finalFee = baseFee * (1 - loyaltyDiscount);
-
-      toast({
-        title: "Success!",
-        description: `M-Pesa message parsed successfully:\n
-          Amount: KES ${baseAmount.toLocaleString()}\n
-          From: ${parsedMessage.contributorName}\n
-          Transaction ID: ${parsedMessage.transactionId}\n
-          Fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Could not parse M-Pesa message. Please check the format and try again.",
-        variant: "destructive",
-      });
-    }
+    onParse(mpesaMessage);
   };
 
   return (
