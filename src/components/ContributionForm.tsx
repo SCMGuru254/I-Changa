@@ -6,8 +6,13 @@ import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtil
 import { ManualEntryForm } from "./contribution/ManualEntryForm";
 import { MpesaMessageInput } from "./contribution/MpesaMessageInput";
 import { InviteSection } from "./contribution/InviteSection";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ContributionForm() {
+  const { groupId } = useParams();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     contributorName: "",
@@ -17,60 +22,48 @@ export function ContributionForm() {
   });
   const [mpesaMessage, setMpesaMessage] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [offlineContributions, setOfflineContributions] = useState(() => {
-    const saved = localStorage.getItem('offlineContributions');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Simulated values - in a real app these would come from your backend
-  const memberCount = 15;
-  const membershipDays = 200;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || !groupId) return;
     
-    if (!formData.contributorName || !formData.phoneNumber || !formData.amount || !formData.transactionId) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
-      return;
-    }
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('contributions')
+        .insert([
+          {
+            group_id: groupId,
+            contributor_id: user.id,
+            amount: parseFloat(formData.amount),
+            transaction_id: formData.transactionId,
+          }
+        ]);
 
-    const amount = parseFloat(formData.amount);
-    const baseFee = calculateTransactionFee(amount, memberCount);
-    const loyaltyDiscount = getLoyaltyDiscount(membershipDays);
-    const finalFee = baseFee * (1 - loyaltyDiscount);
+      if (error) throw error;
 
-    if (!navigator.onLine) {
-      const newContribution = {
-        ...formData,
-        timestamp: new Date().toISOString(),
-        fee: finalFee,
-      };
-      const updatedContributions = [...offlineContributions, newContribution];
-      setOfflineContributions(updatedContributions);
-      localStorage.setItem('offlineContributions', JSON.stringify(updatedContributions));
-      
-      toast({
-        title: "Saved Offline",
-        description: "Contribution saved locally. Will sync when online.",
-      });
-    } else {
       toast({
         title: "Success!",
-        description: `Contribution recorded successfully. Transaction fee: KES ${finalFee.toFixed(2)} ${loyaltyDiscount > 0 ? `(Including ${loyaltyDiscount * 100}% loyalty discount)` : ''}`,
+        description: "Contribution recorded successfully",
       });
-    }
 
-    setFormData({
-      contributorName: "",
-      phoneNumber: "",
-      amount: "",
-      transactionId: "",
-    });
-    setMpesaMessage("");
+      setFormData({
+        contributorName: "",
+        phoneNumber: "",
+        amount: "",
+        transactionId: "",
+      });
+      setMpesaMessage("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,6 +79,7 @@ export function ContributionForm() {
             formData={formData}
             setFormData={setFormData}
             handleSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
           />
         </TabsContent>
 
@@ -94,8 +88,8 @@ export function ContributionForm() {
             mpesaMessage={mpesaMessage}
             setMpesaMessage={setMpesaMessage}
             setFormData={setFormData}
-            memberCount={memberCount}
-            membershipDays={membershipDays}
+            memberCount={15}
+            membershipDays={200}
           />
         </TabsContent>
       </Tabs>
@@ -104,14 +98,6 @@ export function ContributionForm() {
         inviteEmail={inviteEmail}
         setInviteEmail={setInviteEmail}
       />
-
-      {!navigator.onLine && offlineContributions.length > 0 && (
-        <div className="mt-4 p-4 bg-yellow-50 rounded-md">
-          <p className="text-yellow-800">
-            You're offline. {offlineContributions.length} contribution(s) will sync when you're back online.
-          </p>
-        </div>
-      )}
     </Card>
   );
 }
