@@ -11,12 +11,14 @@ interface ManualEntryFormProps {
   };
   setFormData: (data: any) => void;
   handleSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
 }
 
 export function ManualEntryForm({
   formData,
   setFormData,
   handleSubmit,
+  isSubmitting,
 }: ManualEntryFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,8 +69,8 @@ export function ManualEntryForm({
         />
       </div>
 
-      <Button type="submit" className="w-full">
-        Record Contribution
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Recording..." : "Record Contribution"}
       </Button>
     </form>
   );
