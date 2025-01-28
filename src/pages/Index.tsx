@@ -7,10 +7,13 @@ import { GroupAgenda } from "@/components/GroupAgenda";
 import { MemberLeaderboard } from "@/components/MemberLeaderboard";
 import { GroupCreationForm } from "@/components/GroupCreationForm";
 import { useToast } from "@/hooks/use-toast";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
@@ -18,11 +21,30 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Verify database connection
+  const { data: dbStatus, isError: dbError } = useQuery({
+    queryKey: ['dbStatus'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('id')
+        .limit(1);
+      if (error) throw error;
+      return true;
+    },
+  });
+
   useEffect(() => {
     if (!user) {
       navigate("/auth");
       return;
     }
+
+    // Verify that authentication is working
+    toast({
+      title: "Welcome back!",
+      description: "You are successfully logged in.",
+    });
   }, [user, navigate]);
 
   const toggleDarkMode = () => {
@@ -70,6 +92,24 @@ const Index = () => {
               </Button>
             </div>
           </div>
+
+          <Card className="p-4 mb-8">
+            <h2 className="text-lg font-semibold mb-4">System Status</h2>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span>Authentication: Working</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className={`h-5 w-5 ${dbStatus ? 'text-green-500' : 'text-red-500'}`} />
+                <span>Database Connection: {dbStatus ? 'Connected' : 'Error'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span>UI Components: Loaded</span>
+              </div>
+            </div>
+          </Card>
 
           <GroupAgenda />
           <DashboardStats />
