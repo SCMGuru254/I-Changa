@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Label } from "@/components/ui/label";
 
 export function GroupCreationForm() {
   const navigate = useNavigate();
@@ -26,6 +27,15 @@ export function GroupCreationForm() {
       toast({
         title: "Error",
         description: "You must be logged in to create a group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.name || !formData.description || !formData.targetAmount || !formData.endDate) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -88,41 +98,52 @@ export function GroupCreationForm() {
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Create New Group</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        <div className="space-y-2">
+          <Label htmlFor="name">Group Name</Label>
           <Input
-            placeholder="Group Name"
+            id="name"
+            placeholder="Enter group name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
         </div>
-        <div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Purpose/Description</Label>
           <Textarea
-            placeholder="Description"
+            id="description"
+            placeholder="Describe the purpose of this group"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
           />
         </div>
-        <div>
+
+        <div className="space-y-2">
+          <Label htmlFor="targetAmount">Target Amount (KES)</Label>
           <Input
+            id="targetAmount"
             type="number"
-            placeholder="Target Amount (KES)"
+            placeholder="Enter target amount"
             value={formData.targetAmount}
             onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
             required
           />
         </div>
-        <div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endDate">End Date</Label>
           <Input
+            id="endDate"
             type="date"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             required
           />
         </div>
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Creating..." : "Create Group"}
         </Button>
