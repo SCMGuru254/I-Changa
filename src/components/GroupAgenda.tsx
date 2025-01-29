@@ -1,15 +1,47 @@
 import { Card } from "@/components/ui/card";
 import { Pin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 export function GroupAgenda() {
-  const groupInfo = {
-    name: "Medical Fund",
-    agenda: "Supporting our colleague John's medical expenses for his upcoming surgery. Target: KES 100,000. Timeline: 2 months.",
-    image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742",
-    admin: "Sarah Kamau",
-    lastUpdated: "2024-02-20",
-  };
+  const { data: groups, isLoading } = useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select(`
+          *,
+          profiles:creator_id (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
+  if (isLoading) {
+    return (
+      <Card className="p-6 mb-8 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </Card>
+    );
+  }
+
+  if (!groups || groups.length === 0) {
+    return (
+      <Card className="p-6 mb-8">
+        <p className="text-center text-muted-foreground">No groups found. Create your first group!</p>
+      </Card>
+    );
+  }
+
+  // Display the most recent group
+  const latestGroup = groups[0];
+  
   return (
     <Card className="p-6 mb-8 relative overflow-hidden">
       <div className="absolute top-4 right-4">
@@ -19,8 +51,8 @@ export function GroupAgenda() {
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/3">
           <img
-            src={groupInfo.image}
-            alt="Medical facility representing our fund's purpose"
+            src="https://images.unsplash.com/photo-1518005020951-eccb494ad742"
+            alt="Group representation"
             className="rounded-lg w-full h-48 object-cover"
           />
         </div>
@@ -28,13 +60,16 @@ export function GroupAgenda() {
         <div className="md:w-2/3">
           <div className="flex items-center gap-2 mb-4">
             <AppLogo className="h-8 w-8" />
-            <h2 className="text-2xl font-semibold text-primary">{groupInfo.name}</h2>
+            <h2 className="text-2xl font-semibold text-primary">{latestGroup.name}</h2>
           </div>
-          <p className="text-gray-600 mb-4 leading-relaxed">{groupInfo.agenda}</p>
+          <p className="text-gray-600 mb-4 leading-relaxed">{latestGroup.description}</p>
           
           <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>Group Admin: {groupInfo.admin}</span>
-            <span>Last updated: {new Date(groupInfo.lastUpdated).toLocaleDateString()}</span>
+            <span>Target Amount: KES {latestGroup.target_amount?.toLocaleString()}</span>
+            <span>End Date: {new Date(latestGroup.end_date).toLocaleDateString()}</span>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            <span>Created by: {latestGroup.profiles?.full_name || 'Unknown'}</span>
           </div>
         </div>
       </div>
