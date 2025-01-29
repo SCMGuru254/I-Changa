@@ -22,10 +22,22 @@ export function GroupCreationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a group",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
+      console.log("Creating group with data:", {
+        ...formData,
+        creator_id: user.id,
+      });
+
       const { data: group, error } = await supabase
         .from("groups")
         .insert([
@@ -40,7 +52,12 @@ export function GroupCreationForm() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating group:", error);
+        throw error;
+      }
+
+      console.log("Group created successfully:", group);
 
       // Add creator as admin member
       const { error: memberError } = await supabase
@@ -53,19 +70,23 @@ export function GroupCreationForm() {
           },
         ]);
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Error adding member:", memberError);
+        throw memberError;
+      }
+
+      // Generate and copy share link
+      const shareLink = `${window.location.origin}/join/${group.share_token}`;
+      await navigator.clipboard.writeText(shareLink);
 
       toast({
         title: "Success!",
         description: "Group created successfully. Share link copied to clipboard!",
       });
 
-      // Copy share link to clipboard
-      const shareLink = `${window.location.origin}/join/${group.share_token}`;
-      await navigator.clipboard.writeText(shareLink);
-
       navigate(`/group/${group.id}`);
     } catch (error: any) {
+      console.error("Error in group creation:", error);
       toast({
         title: "Error",
         description: error.message,
