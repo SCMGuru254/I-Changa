@@ -33,28 +33,22 @@ export function GroupCreationForm() {
     
     setIsLoading(true);
     try {
-      console.log("Creating group with data:", {
-        ...formData,
-        creator_id: user.id,
-      });
-
-      const { data: group, error } = await supabase
+      // First, create the group
+      const { data: group, error: groupError } = await supabase
         .from("groups")
-        .insert([
-          {
-            name: formData.name,
-            description: formData.description,
-            target_amount: parseFloat(formData.targetAmount),
-            end_date: formData.endDate,
-            creator_id: user.id,
-          },
-        ])
+        .insert({
+          name: formData.name,
+          description: formData.description,
+          target_amount: parseFloat(formData.targetAmount),
+          end_date: formData.endDate,
+          creator_id: user.id,
+        })
         .select()
         .single();
 
-      if (error) {
-        console.error("Error creating group:", error);
-        throw error;
+      if (groupError) {
+        console.error("Error creating group:", groupError);
+        throw groupError;
       }
 
       console.log("Group created successfully:", group);
@@ -62,34 +56,29 @@ export function GroupCreationForm() {
       // Add creator as admin member
       const { error: memberError } = await supabase
         .from("group_members")
-        .insert([
-          {
-            group_id: group.id,
-            member_id: user.id,
-            role: "admin",
-          },
-        ]);
+        .insert({
+          group_id: group.id,
+          member_id: user.id,
+          role: "admin",
+        });
 
       if (memberError) {
         console.error("Error adding member:", memberError);
         throw memberError;
       }
 
-      // Generate and copy share link
-      const shareLink = `${window.location.origin}/join/${group.share_token}`;
-      await navigator.clipboard.writeText(shareLink);
-
       toast({
         title: "Success!",
-        description: "Group created successfully. Share link copied to clipboard!",
+        description: "Group created successfully!",
       });
 
+      // Navigate to the group page
       navigate(`/group/${group.id}`);
     } catch (error: any) {
       console.error("Error in group creation:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create group",
         variant: "destructive",
       });
     } finally {
