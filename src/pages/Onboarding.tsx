@@ -45,7 +45,14 @@ export default function Onboarding() {
         <Header />
 
         <div className="flex-1 flex items-center justify-center my-8">
-          <Carousel className="w-full max-w-lg" onSelect={(index) => setCurrentStep(index)}>
+          <Carousel 
+            className="w-full max-w-lg" 
+            setApi={(api) => {
+              api?.on("select", () => {
+                setCurrentStep(api.selectedScrollSnap());
+              });
+            }}
+          >
             <CarouselContent>
               {onboardingSteps.map((step, index) => (
                 <CarouselItem key={index}>
