@@ -47,10 +47,12 @@ export default function Onboarding() {
         <div className="flex-1 flex items-center justify-center my-8">
           <Carousel 
             className="w-full max-w-lg" 
-            setApi={(api) => {
-              api?.on("select", () => {
-                setCurrentStep(api.selectedScrollSnap());
-              });
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            onSelect={(api) => {
+              setCurrentStep(api.selectedScrollSnap());
             }}
           >
             <CarouselContent>
