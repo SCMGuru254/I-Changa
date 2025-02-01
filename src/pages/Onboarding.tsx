@@ -51,8 +51,12 @@ export default function Onboarding() {
               align: "start",
               loop: true,
             }}
-            onSelect={(api) => {
-              setCurrentStep(api.selectedScrollSnap());
+            setApi={(api) => {
+              if (api) {
+                api.on("select", () => {
+                  setCurrentStep(api.selectedScrollSnap());
+                });
+              }
             }}
           >
             <CarouselContent>
