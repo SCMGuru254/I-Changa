@@ -51,9 +51,9 @@ export function GroupAgenda() {
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/3">
           <img
-            src="https://images.unsplash.com/photo-1518005020951-eccb494ad742"
+            src="/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png"
             alt="Group representation"
-            className="rounded-lg w-full h-48 object-cover"
+            className="rounded-lg w-full h-48 object-contain bg-gray-50"
           />
         </div>
         

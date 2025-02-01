@@ -2,7 +2,7 @@ export function DashboardHeader() {
   return (
     <div className="text-center mb-12">
       <img 
-        src="/lovable-uploads/c647b640-c7a0-4e92-b472-7da0c98547a9.png"
+        src="/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png"
         alt="iChanga Logo"
         className="h-24 w-24 mx-auto mb-4"
       />
