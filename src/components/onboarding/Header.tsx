@@ -8,9 +8,9 @@ export function Header() {
       className="text-center pt-8 flex flex-col items-center gap-4"
     >
       <motion.img
-        src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158"
+        src="/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png"
         alt="Trust Circle Logo"
-        className="w-32 h-32 object-cover rounded-full"
+        className="w-32 h-32 object-contain bg-gray-50 rounded-full"
         initial={{ scale: 0 }}
         animate={{ scale: 1, rotate: 360 }}
         transition={{ 
