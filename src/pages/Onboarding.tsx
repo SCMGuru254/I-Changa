@@ -17,7 +17,7 @@ const onboardingSteps = [
   {
     title: "Welcome to Trust Circle",
     description: "Your trusted companion for group savings and contributions",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+    image: "/lovable-uploads/b7757f32-448d-43a6-b28e-6cc15e143742.png",
   },
   {
     title: "Create & Join Groups",
