@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/onboarding/Header";
 import { StepCard } from "@/components/onboarding/StepCard";
 import { ProgressDots } from "@/components/onboarding/ProgressDots";
+import { Info } from "lucide-react";
 
 const onboardingSteps = [
   {
@@ -79,6 +80,15 @@ export default function Onboarding() {
             onClick={handleComplete}
           >
             Get Started
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => navigate('/guide')}
+          >
+            <Info className="w-4 h-4" />
+            Learn More About iChanga
           </Button>
         </div>
       </div>
