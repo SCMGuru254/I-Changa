@@ -22,9 +22,19 @@ export default function Index() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: groups, isLoading: groupsLoading } = useQuery({
+  // Check auth state
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
     queryKey: ['userGroups'],
     queryFn: async () => {
+      if (!user?.id) return null;
+      console.log("Fetching groups for user:", user.id);
+      
       const { data, error } = await supabase
         .from('groups')
         .select(`
@@ -37,18 +47,25 @@ export default function Index() {
             profiles(full_name)
           )
         `)
-        .eq('group_members.member_id', user?.id);
+        .eq('group_members.member_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching groups:", error);
+        throw error;
+      }
+      
+      console.log("Fetched groups:", data);
       return data;
     },
-    enabled: !!user,
+    enabled: !!user?.id,
   });
 
-  const { data: groupMembers, isLoading: membersLoading } = useQuery({
-    queryKey: ['groupMembers'],
+  const { data: groupMembers, isLoading: membersLoading, error: membersError } = useQuery({
+    queryKey: ['groupMembers', groups?.[0]?.id],
     queryFn: async () => {
       if (!groups?.[0]?.id) return null;
+      console.log("Fetching members for group:", groups[0].id);
+      
       const { data, error } = await supabase
         .from('group_members')
         .select(`
@@ -57,7 +74,12 @@ export default function Index() {
         `)
         .eq('group_id', groups[0].id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching members:", error);
+        throw error;
+      }
+      
+      console.log("Fetched members:", data);
       return data;
     },
     enabled: !!groups?.[0]?.id,
@@ -82,6 +104,7 @@ export default function Index() {
       
       navigate('/');
     } catch (error: any) {
+      console.error("Error leaving group:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -107,6 +130,7 @@ export default function Index() {
         description: "Member role updated successfully",
       });
     } catch (error: any) {
+      console.error("Error updating role:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -116,7 +140,6 @@ export default function Index() {
   };
 
   if (!user) {
-    navigate('/auth');
     return null;
   }
 
@@ -124,6 +147,23 @@ export default function Index() {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (groupsError || membersError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Card className="p-6 text-center text-red-500">
+          <p>Error loading data. Please try again later.</p>
+          <Button 
+            onClick={() => navigate('/auth')} 
+            className="mt-4"
+            variant="outline"
+          >
+            Back to Login
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -144,7 +184,7 @@ export default function Index() {
               <div>
                 <p className="font-semibold">Target Amount:</p>
                 <p className="text-xl text-primary">
-                  KES {currentGroup.target_amount.toLocaleString()}
+                  KES {currentGroup.target_amount?.toLocaleString()}
                 </p>
               </div>
               <Button
@@ -201,28 +241,32 @@ export default function Index() {
 
             <Card className="p-6">
               <h3 className="text-xl font-semibold mb-4">Recent Contributions</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Transaction ID</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentGroup.contributions?.map((contribution) => (
-                    <TableRow key={contribution.transaction_id}>
-                      <TableCell>{contribution.profiles?.full_name}</TableCell>
-                      <TableCell>KES {contribution.amount.toLocaleString()}</TableCell>
-                      <TableCell>{contribution.transaction_id}</TableCell>
-                      <TableCell>
-                        {new Date(contribution.created_at).toLocaleDateString()}
-                      </TableCell>
+              {currentGroup.contributions?.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Member</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Transaction ID</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentGroup.contributions?.map((contribution) => (
+                      <TableRow key={contribution.transaction_id}>
+                        <TableCell>{contribution.profiles?.full_name}</TableCell>
+                        <TableCell>KES {contribution.amount.toLocaleString()}</TableCell>
+                        <TableCell>{contribution.transaction_id}</TableCell>
+                        <TableCell>
+                          {new Date(contribution.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground">No contributions yet</p>
+              )}
             </Card>
           </div>
         </div>

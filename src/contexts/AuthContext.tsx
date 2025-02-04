@@ -17,9 +17,11 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async (userId: string) => {
+      console.log("Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -27,35 +29,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       if (!error && data) {
+        console.log("Profile fetched:", data);
         setProfile(data);
+      } else if (error) {
+        console.error("Error fetching profile:", error);
       }
     };
 
+    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session?.user ? "Logged in" : "No session");
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
       }
+      setLoading(false);
     });
 
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("Auth state changed:", _event, session?.user ? "Logged in" : "Logged out");
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      console.log("Successfully signed out");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <AuthContext.Provider value={{ user, profile, signOut }}>
