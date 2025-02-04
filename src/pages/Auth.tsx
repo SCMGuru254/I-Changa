@@ -8,10 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 
-// HCaptcha site key - this is a demo key that works on localhost and for testing
-const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001";
-
-export default function Auth() {
+const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -23,6 +20,17 @@ export default function Auth() {
     password: "",
     fullName: "",
   });
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        navigate("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   useEffect(() => {
     if (user) {
@@ -66,10 +74,12 @@ export default function Auth() {
         if (signInError) throw signInError;
 
         if (data.user) {
+          console.log("Successfully signed in, navigating to dashboard");
           navigate("/dashboard");
         }
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -121,7 +131,7 @@ export default function Auth() {
           />
           <HCaptcha
             ref={captchaRef}
-            sitekey={HCAPTCHA_SITE_KEY}
+            sitekey="10000000-ffff-ffff-ffff-000000000001"
             size="invisible"
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
@@ -146,4 +156,6 @@ export default function Auth() {
       </Card>
     </div>
   );
-}
+};
+
+export default Auth;
