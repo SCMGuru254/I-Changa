@@ -6,16 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import ReCAPTCHA from "react-google-recaptcha";
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
-// Test site key from Google's documentation - use this for development
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+// HCaptcha site key - this is a demo key that works on localhost and for testing
+const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const captchaRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,8 +35,8 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const captchaToken = await recaptchaRef.current?.executeAsync();
-      if (!captchaToken) {
+      const token = await captchaRef.current?.execute();
+      if (!token) {
         throw new Error("Please complete the captcha");
       }
 
@@ -73,7 +73,7 @@ export default function Auth() {
       });
     } finally {
       setIsLoading(false);
-      recaptchaRef.current?.reset();
+      captchaRef.current?.resetCaptcha();
     }
   };
 
@@ -84,9 +84,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
       <Card className="w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          {isSignUp ? "Create an Account" : "Welcome Back"}
-        </h1>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary mb-2">iChanga</h1>
+          <p className="text-muted-foreground">
+            {isSignUp ? "Create your account" : "Welcome back"}
+          </p>
+        </div>
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <Input
@@ -112,10 +115,10 @@ export default function Auth() {
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
-          <ReCAPTCHA
-            ref={recaptchaRef}
+          <HCaptcha
+            ref={captchaRef}
+            sitekey={HCAPTCHA_SITE_KEY}
             size="invisible"
-            sitekey={RECAPTCHA_SITE_KEY}
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading
