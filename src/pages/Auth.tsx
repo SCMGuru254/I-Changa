@@ -26,7 +26,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -41,7 +41,7 @@ export default function Auth() {
       }
 
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -51,19 +51,23 @@ export default function Auth() {
           },
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+        
         toast({
           title: "Success!",
           description: "Please check your email to verify your account.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError, data } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
-        if (error) throw error;
-        navigate("/");
+        if (signInError) throw signInError;
+
+        if (data.user) {
+          navigate("/dashboard");
+        }
       }
     } catch (error: any) {
       toast({
