@@ -16,9 +16,9 @@ import { Info } from "lucide-react";
 
 const onboardingSteps = [
   {
-    title: "Welcome to Trust Circle",
+    title: "Welcome to iChanga",
     description: "Your trusted companion for group savings and contributions",
-    image: "/lovable-uploads/b7757f32-448d-43a6-b28e-6cc15e143742.png",
+    image: "/lovable-uploads/2112470e-4b98-4dbc-89aa-cd8c1b1fd11b.png",
   },
   {
     title: "Create & Join Groups",
