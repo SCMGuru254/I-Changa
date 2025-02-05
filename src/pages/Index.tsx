@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { GroupHeader } from "@/components/dashboard/GroupHeader";
+import { GroupDetails } from "@/components/dashboard/GroupDetails";
 import { MembersList } from "@/components/dashboard/MembersList";
 import { ContributionsTable } from "@/components/dashboard/ContributionsTable";
 
@@ -46,8 +46,8 @@ export default function Index() {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 30000, // Cache data for 30 seconds
-    refetchOnWindowFocus: false, // Disable automatic refetch on window focus
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: groupMembers, isLoading: membersLoading, error: membersError } = useQuery({
@@ -165,7 +165,7 @@ export default function Index() {
       
       {currentGroup ? (
         <div className="space-y-8">
-          <GroupHeader
+          <GroupDetails
             name={currentGroup.name}
             description={currentGroup.description}
             targetAmount={currentGroup.target_amount}
@@ -175,13 +175,13 @@ export default function Index() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <MembersList
-              members={groupMembers}
+              members={groupMembers || []}
               isAdmin={isAdmin}
               currentUserId={user.id}
               onRoleChange={handleRoleChange}
             />
             <ContributionsTable
-              contributions={currentGroup.contributions}
+              contributions={currentGroup.contributions || []}
             />
           </div>
         </div>

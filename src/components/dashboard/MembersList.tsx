@@ -2,8 +2,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Crown, Shield } from "lucide-react";
 
+interface Member {
+  id: string;
+  member_id: string;
+  role: string;
+  profiles: {
+    full_name: string | null;
+    phone_number: string | null;
+  } | null;
+}
+
 interface MembersListProps {
-  members: any[];
+  members: Member[];
   isAdmin: boolean;
   currentUserId: string;
   onRoleChange: (memberId: string, newRole: string) => void;
