@@ -19,18 +19,18 @@ import {
 
 export default function Index() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   // Check auth state
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
-    queryKey: ['userGroups'],
+    queryKey: ['userGroups', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       console.log("Fetching groups for user:", user.id);
@@ -138,6 +138,14 @@ export default function Index() {
       });
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
@@ -280,4 +288,3 @@ export default function Index() {
       )}
     </div>
   );
-}

@@ -1,56 +1,82 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
   user: User | null;
   profile: any | null;
   signOut: () => Promise<void>;
+  isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   signOut: async () => {},
+  isLoading: true,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProfile = async (userId: string) => {
       console.log("Fetching profile for user:", userId);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
 
-      if (!error && data) {
-        console.log("Profile fetched:", data);
-        setProfile(data);
-      } else if (error) {
-        console.error("Error fetching profile:", error);
+        if (error) {
+          console.error("Error fetching profile:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch user profile",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data) {
+          console.log("Profile fetched:", data);
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Error in fetchProfile:", error);
       }
     };
 
     // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session?.user ? "Logged in" : "No session");
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session check:", session?.user ? "Logged in" : "No session");
+        
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error("Error in initializeAuth:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed:", _event, session?.user ? "Logged in" : "Logged out");
+      
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -58,28 +84,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         setProfile(null);
       }
+      setIsLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
       console.log("Successfully signed out");
+      toast({
+        title: "Success",
+        description: "Successfully signed out",
+      });
     } catch (error) {
       console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
     }
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
-    <AuthContext.Provider value={{ user, profile, signOut }}>
+    <AuthContext.Provider value={{ user, profile, signOut, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

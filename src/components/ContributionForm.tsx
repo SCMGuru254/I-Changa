@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
 import { ManualEntryForm } from "./contribution/ManualEntryForm";
 import { MpesaMessageInput } from "./contribution/MpesaMessageInput";
 import { InviteSection } from "./contribution/InviteSection";
@@ -27,7 +26,23 @@ export function ContributionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !groupId) return;
+    if (!user || !groupId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to make a contribution",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!formData.amount || !formData.transactionId) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -57,6 +72,7 @@ export function ContributionForm() {
       });
       setMpesaMessage("");
     } catch (error: any) {
+      console.error("Error submitting contribution:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -68,6 +84,15 @@ export function ContributionForm() {
   };
 
   const handleMpesaMessageParse = (message: string) => {
+    if (!message.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter an M-Pesa message",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const parsedMessage = parseMpesaMessage(message);
     if (parsedMessage) {
       setFormData({
