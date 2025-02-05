@@ -157,7 +157,7 @@ export default function Index() {
   }
 
   const currentGroup = groups?.[0];
-  const isAdmin = currentGroup?.group_members[0]?.role === 'admin';
+  const isAdmin = currentGroup?.group_members?.[0]?.role === 'admin';
 
   return (
     <div className="container mx-auto py-8 px-4">
