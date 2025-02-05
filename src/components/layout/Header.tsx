@@ -20,9 +20,13 @@ export function Header() {
     try {
       await signOut();
       navigate("/auth");
+      toast({
+        title: "Success",
+        description: "Successfully signed out",
+      });
     } catch (error: any) {
       toast({
-        title: "Error signing out",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });

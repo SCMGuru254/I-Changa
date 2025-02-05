@@ -8,22 +8,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { GroupDetails } from "@/components/dashboard/GroupDetails";
-import { MembersList } from "@/components/dashboard/MembersList";
-import { ContributionsTable } from "@/components/dashboard/ContributionsTable";
+import { MainContent } from "@/components/dashboard/MainContent";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Header } from "@/components/layout/Header";
 
 export default function Index() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, navigate, authLoading]);
-
-  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
+  const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -42,86 +37,21 @@ export default function Index() {
         `)
         .eq('group_members.member_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching groups:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load groups data",
+          variant: "destructive",
+        });
+        return null;
+      }
       return data;
     },
     enabled: !!user?.id,
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
-
-  const { data: groupMembers, isLoading: membersLoading, error: membersError } = useQuery({
-    queryKey: ['groupMembers', groups?.[0]?.id],
-    queryFn: async () => {
-      if (!groups?.[0]?.id) return null;
-      
-      const { data, error } = await supabase
-        .from('group_members')
-        .select(`
-          *,
-          profiles(full_name, phone_number)
-        `)
-        .eq('group_id', groups[0].id);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!groups?.[0]?.id,
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
-  });
-
-  const handleLeaveGroup = async () => {
-    if (!user || !groups?.[0]?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('group_members')
-        .delete()
-        .eq('group_id', groups[0].id)
-        .eq('member_id', user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "You have left the group successfully",
-      });
-      
-      navigate('/');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRoleChange = async (memberId: string, newRole: string) => {
-    if (!groups?.[0]?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('group_members')
-        .update({ role: newRole })
-        .eq('group_id', groups[0].id)
-        .eq('member_id', memberId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Member role updated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   if (authLoading || !user) {
     return (
@@ -131,7 +61,7 @@ export default function Index() {
     );
   }
 
-  if (groupsLoading || membersLoading) {
+  if (groupsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -139,60 +69,26 @@ export default function Index() {
     );
   }
 
-  if (groupsError || membersError) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <Card className="p-6 text-center text-red-500">
-          <p>Error loading data. Please try again later.</p>
-          <Button 
-            onClick={() => navigate('/auth')} 
-            className="mt-4"
-            variant="outline"
-          >
-            Back to Login
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  const currentGroup = groups?.[0];
-  const isAdmin = currentGroup?.group_members?.[0]?.role === 'admin';
-
   return (
-    <div className="container mx-auto py-8 px-4">
-      <DashboardHeader />
-      
-      {currentGroup ? (
-        <div className="space-y-8">
-          <GroupDetails
-            name={currentGroup.name}
-            description={currentGroup.description}
-            targetAmount={currentGroup.target_amount}
-            isAdmin={isAdmin}
-            onLeave={handleLeaveGroup}
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <MembersList
-              members={groupMembers || []}
-              isAdmin={isAdmin}
-              currentUserId={user.id}
-              onRoleChange={handleRoleChange}
-            />
-            <ContributionsTable
-              contributions={currentGroup.contributions || []}
-            />
+    <DashboardLayout>
+      <div className="container mx-auto py-8 px-4">
+        <Header />
+        <DashboardHeader />
+        
+        {groups && groups.length > 0 ? (
+          <div className="grid lg:grid-cols-12 gap-8">
+            <MainContent />
+            <Sidebar />
           </div>
-        </div>
-      ) : (
-        <Card className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">
-            You haven't joined any groups yet. Create one to get started!
-          </p>
-          <Button onClick={() => navigate('/onboarding')}>Create Group</Button>
-        </Card>
-      )}
-    </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <p className="text-muted-foreground mb-4">
+              You haven't joined any groups yet. Create one to get started!
+            </p>
+            <Button onClick={() => navigate('/onboarding')}>Create Group</Button>
+          </Card>
+        )}
+      </div>
+    </DashboardLayout>
   );
 }
