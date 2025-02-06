@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Profile fetch error:", error);
         return null;
       }
-
       return data;
     } catch (error) {
       console.error("Profile fetch exception:", error);
@@ -49,7 +48,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
         
         if (session?.user && mounted) {
           setUser(session.user);
@@ -71,7 +72,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (mounted) {
+        if (!mounted) return;
+        
+        try {
           if (session?.user) {
             setUser(session.user);
             const profileData = await fetchProfile(session.user.id);
@@ -82,7 +85,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(null);
             setProfile(null);
           }
-          setIsLoading(false);
+        } catch (error) {
+          console.error("Auth state change error:", error);
+        } finally {
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
       }
     );

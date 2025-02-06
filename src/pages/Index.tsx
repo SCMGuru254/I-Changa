@@ -25,35 +25,36 @@ export default function Index() {
     }
   }, [user, authLoading, navigate]);
 
-  const { data: memberGroups, isLoading: membershipLoading } = useQuery({
-    queryKey: ['userGroupMemberships', user?.id],
+  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
+    queryKey: ['userGroups', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
+      
       const { data, error } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('member_id', user.id);
+        .from('groups')
+        .select(`
+          *,
+          group_members!inner(role)
+        `)
+        .eq('group_members.member_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Groups fetch error:", error);
+        throw error;
+      }
+
       return data || [];
     },
     enabled: !!user?.id,
-  });
-
-  const { data: groups, isLoading: groupsLoading } = useQuery({
-    queryKey: ['groups', memberGroups],
-    queryFn: async () => {
-      if (!memberGroups?.length) return [];
-      const groupIds = memberGroups.map(mg => mg.group_id);
-      const { data, error } = await supabase
-        .from('groups')
-        .select('*')
-        .in('id', groupIds);
-
-      if (error) throw error;
-      return data || [];
+    retry: 1,
+    onError: (error: any) => {
+      console.error("Groups query error:", error);
+      toast({
+        title: "Error loading groups",
+        description: "Please try refreshing the page",
+        variant: "destructive",
+      });
     },
-    enabled: !!memberGroups?.length,
   });
 
   if (authLoading || !user) {
@@ -64,7 +65,21 @@ export default function Index() {
     );
   }
 
-  const isLoading = membershipLoading || groupsLoading;
+  if (groupsError) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto py-8 px-4">
+          <Header />
+          <Card className="p-6 text-center">
+            <p className="text-muted-foreground mb-4">
+              Error loading your groups. Please try again.
+            </p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -72,7 +87,7 @@ export default function Index() {
         <Header />
         <DashboardHeader />
         
-        {isLoading ? (
+        {groupsLoading ? (
           <div className="flex items-center justify-center h-[200px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
