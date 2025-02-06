@@ -21,59 +21,42 @@ export default function Index() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      console.log("No authenticated user, redirecting to auth");
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
-  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
-    queryKey: ['userGroups', user?.id],
+  const { data: memberGroups, isLoading: membershipLoading } = useQuery({
+    queryKey: ['userGroupMemberships', user?.id],
     queryFn: async () => {
-      if (!user?.id) {
-        console.log("Query aborted - no user ID");
-        return null;
-      }
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('member_id', user.id);
 
-      try {
-        console.log("Fetching groups for user:", user.id);
-        const { data: memberGroups, error: memberError } = await supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('member_id', user.id);
-
-        if (memberError) {
-          console.error('Member groups error:', memberError);
-          throw memberError;
-        }
-
-        if (!memberGroups?.length) {
-          console.log('No group memberships found');
-          return [];
-        }
-
-        const groupIds = memberGroups.map(mg => mg.group_id);
-        const { data: groupsData, error: groupsError } = await supabase
-          .from('groups')
-          .select('*')
-          .in('id', groupIds);
-
-        if (groupsError) {
-          console.error('Groups data error:', groupsError);
-          throw groupsError;
-        }
-
-        console.log('Groups fetched successfully:', groupsData);
-        return groupsData;
-      } catch (error) {
-        console.error('Groups query error:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user?.id && !authLoading,
-    retry: 1
+    enabled: !!user?.id,
   });
 
-  if (authLoading) {
+  const { data: groups, isLoading: groupsLoading } = useQuery({
+    queryKey: ['groups', memberGroups],
+    queryFn: async () => {
+      if (!memberGroups?.length) return [];
+      const groupIds = memberGroups.map(mg => mg.group_id);
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .in('id', groupIds);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!memberGroups?.length,
+  });
+
+  if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -81,18 +64,7 @@ export default function Index() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  if (groupsError) {
-    console.error("Groups error:", groupsError);
-    toast({
-      title: "Error Loading Groups",
-      description: "There was a problem loading your groups. Please try again.",
-      variant: "destructive",
-    });
-  }
+  const isLoading = membershipLoading || groupsLoading;
 
   return (
     <DashboardLayout>
@@ -100,7 +72,7 @@ export default function Index() {
         <Header />
         <DashboardHeader />
         
-        {groupsLoading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center h-[200px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>

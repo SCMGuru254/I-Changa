@@ -25,20 +25,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
-    console.log("Fetching profile for user:", userId);
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Profile fetch error:", error);
         return null;
       }
 
-      console.log("Profile fetched successfully:", data);
       return data;
     } catch (error) {
       console.error("Profile fetch exception:", error);
@@ -51,23 +49,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        console.log("Initializing auth state...");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          return;
-        }
-
         if (session?.user && mounted) {
-          console.log("Active session found for user:", session.user.id);
           setUser(session.user);
           const profileData = await fetchProfile(session.user.id);
           if (profileData && mounted) {
             setProfile(profileData);
           }
-        } else {
-          console.log("No active session found");
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -82,23 +71,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event);
-        
-        if (session?.user && mounted) {
-          console.log("Setting user state:", session.user.id);
-          setUser(session.user);
-          const profileData = await fetchProfile(session.user.id);
-          if (profileData && mounted) {
-            setProfile(profileData);
-          }
-        } else {
-          if (mounted) {
-            console.log("Clearing user state");
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user);
+            const profileData = await fetchProfile(session.user.id);
+            if (profileData && mounted) {
+              setProfile(profileData);
+            }
+          } else {
             setUser(null);
             setProfile(null);
           }
-        }
-        if (mounted) {
           setIsLoading(false);
         }
       }
