@@ -19,24 +19,38 @@ export default function Index() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  console.log("Auth state:", { user, authLoading }); // Debug auth state
-
+  // Basic groups query without inner join to test if user can access their groups
   const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
-      console.log("Fetching groups for user:", user?.id); // Debug query execution
-      
       if (!user?.id) {
-        console.log("No user ID available"); // Debug user state
+        console.log("No user ID available");
         return null;
       }
-      
+
       try {
-        const { data, error } = await supabase
+        // First, get groups the user is a member of
+        const { data: memberGroups, error: memberError } = await supabase
+          .from('group_members')
+          .select('group_id, role')
+          .eq('member_id', user.id);
+
+        if (memberError) {
+          console.error('Error fetching group memberships:', memberError);
+          throw memberError;
+        }
+
+        if (!memberGroups?.length) {
+          console.log('User has no group memberships');
+          return [];
+        }
+
+        // Then get the actual group data
+        const groupIds = memberGroups.map(mg => mg.group_id);
+        const { data: groupsData, error: groupsError } = await supabase
           .from('groups')
           .select(`
             *,
-            group_members!inner(role),
             contributions(
               amount,
               transaction_id,
@@ -44,32 +58,52 @@ export default function Index() {
               profiles(full_name)
             )
           `)
-          .eq('group_members.member_id', user.id);
+          .in('id', groupIds);
 
-        if (error) {
-          console.error('Supabase error:', error); // Debug database errors
-          throw error;
+        if (groupsError) {
+          console.error('Error fetching groups data:', groupsError);
+          throw groupsError;
         }
 
-        console.log("Groups data received:", data); // Debug successful data
-        return data;
+        // Combine group data with member roles
+        const groupsWithRoles = groupsData.map(group => ({
+          ...group,
+          role: memberGroups.find(mg => mg.group_id === group.id)?.role
+        }));
+
+        console.log('Successfully fetched groups:', groupsWithRoles);
+        return groupsWithRoles;
       } catch (error) {
-        console.error('Error in groups query:', error); // Debug catch block
+        console.error('Error in groups query:', error);
         throw error;
       }
     },
     enabled: !!user?.id,
     staleTime: 30000,
-    refetchOnWindowFocus: false,
-    retry: 2,
+    retry: 1
   });
 
   useEffect(() => {
-    console.log("Component mounted, auth state:", { user, authLoading }); // Debug component lifecycle
-  }, [user, authLoading]);
+    if (!authLoading && !user) {
+      console.log("No authenticated user, redirecting to auth");
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // useEffect will handle redirect
+  }
 
   if (groupsError) {
-    console.error("Groups query error:", groupsError); // Debug query errors
+    console.error("Groups query error:", groupsError);
     toast({
       title: "Error Loading Data",
       description: "There was a problem loading your groups. Please try again.",
@@ -77,25 +111,13 @@ export default function Index() {
     });
   }
 
-  if (authLoading || !user) {
-    console.log("Showing auth loading state"); // Debug loading state
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   if (groupsLoading) {
-    console.log("Showing groups loading state"); // Debug loading state
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  console.log("Rendering dashboard with groups:", groups); // Debug final render
 
   return (
     <DashboardLayout>

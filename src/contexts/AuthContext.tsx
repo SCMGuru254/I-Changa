@@ -24,53 +24,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchProfile = async (userId: string) => {
-      console.log("Fetching profile for user:", userId);
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", userId)
-          .single();
+  // Fetch profile data
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-        if (error) {
-          console.error("Error fetching profile:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch user profile",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (data) {
-          console.log("Profile fetched:", data);
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error("Error in fetchProfile:", error);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
       }
-    };
 
-    // Check current session
+      return data;
+    } catch (error) {
+      console.error("Error in fetchProfile:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Initial session check
     const initializeAuth = async () => {
       try {
         console.log("Initializing auth state...");
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("Initial session check:", session?.user ? "Logged in" : "No session");
         
         if (session?.user) {
+          console.log("Found existing session for user:", session.user.id);
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          const profileData = await fetchProfile(session.user.id);
+          if (profileData) {
+            console.log("Profile data loaded:", profileData);
+            setProfile(profileData);
+          }
+        } else {
+          console.log("No active session found");
         }
       } catch (error) {
         console.error("Error in initializeAuth:", error);
-        toast({
-          title: "Authentication Error",
-          description: "There was a problem with authentication. Please try logging in again.",
-          variant: "destructive",
-        });
       } finally {
         setIsLoading(false);
       }
@@ -79,39 +73,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", _event, session?.user ? "Logged in" : "Logged out");
-      
-      if (session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user ? "User present" : "No user");
+        
+        if (session?.user) {
+          setUser(session.user);
+          const profileData = await fetchProfile(session.user.id);
+          if (profileData) {
+            setProfile(profileData);
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      console.log("Successfully signed out");
+      setUser(null);
+      setProfile(null);
       toast({
-        title: "Success",
-        description: "Successfully signed out",
+        title: "Signed out successfully",
+        description: "You have been logged out.",
       });
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
         title: "Error",
-        description: "Failed to sign out",
+        description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
     }
