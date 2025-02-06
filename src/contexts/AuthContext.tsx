@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -55,6 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check current session
     const initializeAuth = async () => {
       try {
+        console.log("Initializing auth state...");
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Initial session check:", session?.user ? "Logged in" : "No session");
         
@@ -64,6 +66,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         console.error("Error in initializeAuth:", error);
+        toast({
+          title: "Authentication Error",
+          description: "There was a problem with authentication. Please try logging in again.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }

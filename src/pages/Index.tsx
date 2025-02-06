@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -18,42 +19,66 @@ export default function Index() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const { data: groups, isLoading: groupsLoading } = useQuery({
+  console.log("Auth state:", { user, authLoading }); // Debug auth state
+
+  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
+      console.log("Fetching groups for user:", user?.id); // Debug query execution
       
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          group_members!inner(role),
-          contributions(
-            amount,
-            transaction_id,
-            created_at,
-            profiles(full_name)
-          )
-        `)
-        .eq('group_members.member_id', user.id);
-
-      if (error) {
-        console.error('Error fetching groups:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load groups data",
-          variant: "destructive",
-        });
+      if (!user?.id) {
+        console.log("No user ID available"); // Debug user state
         return null;
       }
-      return data;
+      
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select(`
+            *,
+            group_members!inner(role),
+            contributions(
+              amount,
+              transaction_id,
+              created_at,
+              profiles(full_name)
+            )
+          `)
+          .eq('group_members.member_id', user.id);
+
+        if (error) {
+          console.error('Supabase error:', error); // Debug database errors
+          throw error;
+        }
+
+        console.log("Groups data received:", data); // Debug successful data
+        return data;
+      } catch (error) {
+        console.error('Error in groups query:', error); // Debug catch block
+        throw error;
+      }
     },
     enabled: !!user?.id,
     staleTime: 30000,
     refetchOnWindowFocus: false,
+    retry: 2,
   });
 
+  useEffect(() => {
+    console.log("Component mounted, auth state:", { user, authLoading }); // Debug component lifecycle
+  }, [user, authLoading]);
+
+  if (groupsError) {
+    console.error("Groups query error:", groupsError); // Debug query errors
+    toast({
+      title: "Error Loading Data",
+      description: "There was a problem loading your groups. Please try again.",
+      variant: "destructive",
+    });
+  }
+
   if (authLoading || !user) {
+    console.log("Showing auth loading state"); // Debug loading state
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -62,12 +87,15 @@ export default function Index() {
   }
 
   if (groupsLoading) {
+    console.log("Showing groups loading state"); // Debug loading state
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  console.log("Rendering dashboard with groups:", groups); // Debug final render
 
   return (
     <DashboardLayout>
