@@ -19,18 +19,23 @@ export default function Index() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
+  // Handle auth redirect
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  // Only fetch groups when we have a user
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
       try {
-        if (!user?.id) return [];
-        
+        // Ensure we have a user before querying
+        if (!user?.id) {
+          return [];
+        }
+
         const { data, error } = await supabase
           .from('groups')
           .select(`
@@ -49,6 +54,7 @@ export default function Index() {
           return [];
         }
 
+        // Ensure we return an array even if data is null
         return data || [];
       } catch (err) {
         console.error("Groups fetch exception:", err);
@@ -60,8 +66,10 @@ export default function Index() {
         return [];
       }
     },
-    enabled: Boolean(user?.id),
-    staleTime: 5000
+    enabled: Boolean(user?.id), // Only run query when we have a user ID
+    staleTime: 5000,
+    retry: 2, // Retry failed requests twice
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   // Show loading state while authenticating
@@ -73,9 +81,9 @@ export default function Index() {
     );
   }
 
-  // Show login page if no user
+  // If no user, return null (useEffect will handle navigation)
   if (!user) {
-    return null; // useEffect will handle navigation
+    return null;
   }
 
   return (
