@@ -28,18 +28,30 @@ export default function Index() {
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          group_members!inner(role)
-        `)
-        .eq('group_members.member_id', user.id);
+      try {
+        if (!user?.id) return [];
+        
+        const { data, error } = await supabase
+          .from('groups')
+          .select(`
+            *,
+            group_members!inner(role)
+          `)
+          .eq('group_members.member_id', user.id);
 
-      if (error) {
-        console.error("Groups fetch error:", error);
+        if (error) {
+          console.error("Groups fetch error:", error);
+          toast({
+            title: "Error loading groups",
+            description: "Please try refreshing the page",
+            variant: "destructive",
+          });
+          return [];
+        }
+
+        return data || [];
+      } catch (err) {
+        console.error("Groups fetch exception:", err);
         toast({
           title: "Error loading groups",
           description: "Please try refreshing the page",
@@ -47,18 +59,23 @@ export default function Index() {
         });
         return [];
       }
-
-      return data || [];
     },
-    enabled: !!user?.id
+    enabled: Boolean(user?.id),
+    staleTime: 5000
   });
 
-  if (authLoading || !user) {
+  // Show loading state while authenticating
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Show login page if no user
+  if (!user) {
+    return null; // useEffect will handle navigation
   }
 
   return (
@@ -71,7 +88,7 @@ export default function Index() {
           <div className="flex items-center justify-center h-[200px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : groups && groups.length > 0 ? (
+        ) : Array.isArray(groups) && groups.length > 0 ? (
           <div className="grid lg:grid-cols-12 gap-8">
             <MainContent />
             <Sidebar />
