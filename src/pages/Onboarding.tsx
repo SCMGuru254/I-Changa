@@ -16,19 +16,19 @@ import { Info } from "lucide-react";
 
 const onboardingSteps = [
   {
-    title: "Welcome to iChanga",
+    title: "Welcome to Trust Circle",
     description: "Your trusted companion for group savings and contributions",
-    image: "/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png",
+    image: "/lovable-uploads/b7757f32-448d-43a6-b28e-6cc15e143742.png",
   },
   {
     title: "Create & Join Groups",
     description: "Start or join savings groups with people you trust",
-    image: "/lovable-uploads/5b74b201-662c-4821-b518-2ea917f97d36.png",
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
   },
   {
     title: "Track Contributions",
     description: "Monitor group savings and contributions in real-time",
-    image: "/lovable-uploads/c647b640-c7a0-4e92-b472-7da0c98547a9.png",
+    image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
   },
 ];
 

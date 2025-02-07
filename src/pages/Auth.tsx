@@ -6,13 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+import ReCAPTCHA from "react-google-recaptcha";
 
-const Auth = () => {
+// Test site key from Google's documentation - use this for development
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+
+export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const captchaRef = useRef(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,19 +25,8 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        navigate("/dashboard");
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
-
-  useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -43,13 +35,13 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const token = await captchaRef.current?.execute();
-      if (!token) {
+      const captchaToken = await recaptchaRef.current?.executeAsync();
+      if (!captchaToken) {
         throw new Error("Please complete the captcha");
       }
 
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -59,27 +51,21 @@ const Auth = () => {
           },
         });
 
-        if (signUpError) throw signUpError;
-        
+        if (error) throw error;
         toast({
           title: "Success!",
           description: "Please check your email to verify your account.",
         });
       } else {
-        const { error: signInError, data } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
-        if (signInError) throw signInError;
-
-        if (data.user) {
-          console.log("Successfully signed in, navigating to dashboard");
-          navigate("/dashboard");
-        }
+        if (error) throw error;
+        navigate("/");
       }
     } catch (error: any) {
-      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -87,7 +73,7 @@ const Auth = () => {
       });
     } finally {
       setIsLoading(false);
-      captchaRef.current?.resetCaptcha();
+      recaptchaRef.current?.reset();
     }
   };
 
@@ -98,12 +84,9 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
       <Card className="w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">iChanga</h1>
-          <p className="text-muted-foreground">
-            {isSignUp ? "Create your account" : "Welcome back"}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-center mb-6">
+          {isSignUp ? "Create an Account" : "Welcome Back"}
+        </h1>
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <Input
@@ -129,10 +112,10 @@ const Auth = () => {
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
-          <HCaptcha
-            ref={captchaRef}
-            sitekey="10000000-ffff-ffff-ffff-000000000001"
+          <ReCAPTCHA
+            ref={recaptchaRef}
             size="invisible"
+            sitekey={RECAPTCHA_SITE_KEY}
           />
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading
@@ -156,6 +139,4 @@ const Auth = () => {
       </Card>
     </div>
   );
-};
-
-export default Auth;
+}

@@ -18,7 +18,7 @@ export function StepCard({ title, description, image }: StepCardProps) {
         <motion.img
           src={image}
           alt={title}
-          className="w-64 h-64 mx-auto object-contain rounded-lg shadow-lg"
+          className="w-64 h-64 mx-auto object-cover rounded-lg shadow-lg"
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.2 }}
         />
