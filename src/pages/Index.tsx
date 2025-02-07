@@ -25,7 +25,7 @@ export default function Index() {
     }
   }, [user, authLoading, navigate]);
 
-  const { data: groups, isLoading: groupsLoading, error: groupsError } = useQuery({
+  const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -40,21 +40,17 @@ export default function Index() {
 
       if (error) {
         console.error("Groups fetch error:", error);
-        throw error;
+        toast({
+          title: "Error loading groups",
+          description: "Please try refreshing the page",
+          variant: "destructive",
+        });
+        return [];
       }
 
       return data || [];
     },
-    enabled: !!user?.id,
-    retry: 1,
-    onError: (error: any) => {
-      console.error("Groups query error:", error);
-      toast({
-        title: "Error loading groups",
-        description: "Please try refreshing the page",
-        variant: "destructive",
-      });
-    },
+    enabled: !!user?.id
   });
 
   if (authLoading || !user) {
@@ -62,22 +58,6 @@ export default function Index() {
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    );
-  }
-
-  if (groupsError) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto py-8 px-4">
-          <Header />
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground mb-4">
-              Error loading your groups. Please try again.
-            </p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
-          </Card>
-        </div>
-      </DashboardLayout>
     );
   }
 

@@ -48,14 +48,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && mounted) {
           setUser(session.user);
           const profileData = await fetchProfile(session.user.id);
-          if (profileData && mounted) {
+          if (mounted && profileData) {
             setProfile(profileData);
           }
         }
@@ -73,12 +71,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        
+
         try {
           if (session?.user) {
             setUser(session.user);
             const profileData = await fetchProfile(session.user.id);
-            if (profileData && mounted) {
+            if (mounted && profileData) {
               setProfile(profileData);
             }
           } else {
