@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -23,7 +24,7 @@ const onboardingSteps = [
   {
     title: "Create & Join Groups",
     description: "Start or join savings groups with people you trust",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+    image: "/lovable-uploads/2f360fe2-d870-4512-adae-3963eaafdac9.png",
   },
   {
     title: "Track Contributions",
@@ -37,7 +38,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   const handleComplete = () => {
-    navigate("/auth");
+    navigate("/dashboard");
   };
 
   return (

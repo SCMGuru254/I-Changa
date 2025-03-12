@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -11,7 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Onboarding />} />
         <Route path="/dashboard" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth" element={<Index />} /> {/* Redirect auth to dashboard */}
         <Route path="/group/:id" element={<GroupPage />} />
         <Route path="/guide" element={<UserGuide />} />
       </Routes>
