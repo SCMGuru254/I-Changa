@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -5,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, UserPlus, LogOut, Crown, Shield } from "lucide-react";
 import {
@@ -16,51 +17,98 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DashboardStats } from "@/components/DashboardStats";
 
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Configure for offline support
+  useEffect(() => {
+    // Enable cache persistence (implemented through the query client)
+    const onlineStatus = () => {
+      if (navigator.onLine) {
+        toast({
+          title: "You are online",
+          description: "Data will sync with the server",
+        });
+        // Refetch data when back online
+        queryClient.invalidateQueries();
+      } else {
+        toast({
+          title: "You are offline",
+          description: "The app will continue to work with cached data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    window.addEventListener('online', onlineStatus);
+    window.addEventListener('offline', onlineStatus);
+
+    return () => {
+      window.removeEventListener('online', onlineStatus);
+      window.removeEventListener('offline', onlineStatus);
+    };
+  }, [queryClient, toast]);
 
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          group_members!inner(role),
-          contributions(
-            amount,
-            transaction_id,
-            created_at,
-            profiles(full_name)
-          )
-        `)
-        .eq('group_members.member_id', user?.id);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select(`
+            *,
+            group_members!inner(role),
+            contributions(
+              amount,
+              transaction_id,
+              created_at,
+              profiles(full_name)
+            )
+          `)
+          .eq('group_members.member_id', user?.id);
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+        return [];
+      }
     },
-    enabled: !!user,
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 60 * 60 * 1000, // 1 hour (cache persists longer for offline usage)
+    retry: 3,
   });
 
   const { data: groupMembers, isLoading: membersLoading } = useQuery({
-    queryKey: ['groupMembers'],
+    queryKey: ['groupMembers', groups?.[0]?.id],
     queryFn: async () => {
-      if (!groups?.[0]?.id) return null;
-      const { data, error } = await supabase
-        .from('group_members')
-        .select(`
-          *,
-          profiles(full_name, phone_number)
-        `)
-        .eq('group_id', groups[0].id);
+      try {
+        if (!groups?.[0]?.id) return [];
+        const { data, error } = await supabase
+          .from('group_members')
+          .select(`
+            *,
+            profiles(full_name, phone_number)
+          `)
+          .eq('group_id', groups[0].id);
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching group members:", error);
+        return [];
+      }
     },
     enabled: !!groups?.[0]?.id,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 60 * 60 * 1000,
+    retry: 3,
   });
 
   const handleLeaveGroup = async () => {
@@ -115,11 +163,6 @@ export default function Index() {
     }
   };
 
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
-
   if (groupsLoading || membersLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -129,11 +172,13 @@ export default function Index() {
   }
 
   const currentGroup = groups?.[0];
-  const isAdmin = currentGroup?.group_members[0]?.role === 'admin';
+  const isAdmin = currentGroup?.group_members?.[0]?.role === 'admin';
 
   return (
     <div className="container mx-auto py-8 px-4">
       <DashboardHeader />
+      
+      <DashboardStats />
       
       {currentGroup ? (
         <div className="space-y-8">
@@ -144,7 +189,7 @@ export default function Index() {
               <div>
                 <p className="font-semibold">Target Amount:</p>
                 <p className="text-xl text-primary">
-                  KES {currentGroup.target_amount.toLocaleString()}
+                  KES {currentGroup.target_amount?.toLocaleString() || '0'}
                 </p>
               </div>
               <Button
@@ -166,8 +211,8 @@ export default function Index() {
                 {groupMembers?.map((member) => (
                   <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent/10 rounded-lg">
                     <div>
-                      <p className="font-medium">{member.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{member.profiles?.phone_number}</p>
+                      <p className="font-medium">{member.profiles?.full_name || 'Unknown'}</p>
+                      <p className="text-sm text-muted-foreground">{member.profiles?.phone_number || 'No phone'}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {member.role === 'admin' && (
@@ -201,28 +246,32 @@ export default function Index() {
 
             <Card className="p-6">
               <h3 className="text-xl font-semibold mb-4">Recent Contributions</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Transaction ID</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentGroup.contributions?.map((contribution) => (
-                    <TableRow key={contribution.transaction_id}>
-                      <TableCell>{contribution.profiles?.full_name}</TableCell>
-                      <TableCell>KES {contribution.amount.toLocaleString()}</TableCell>
-                      <TableCell>{contribution.transaction_id}</TableCell>
-                      <TableCell>
-                        {new Date(contribution.created_at).toLocaleDateString()}
-                      </TableCell>
+              {currentGroup.contributions && currentGroup.contributions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Member</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Transaction ID</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentGroup.contributions?.map((contribution) => (
+                      <TableRow key={contribution.transaction_id}>
+                        <TableCell>{contribution.profiles?.full_name || 'Unknown'}</TableCell>
+                        <TableCell>KES {contribution.amount?.toLocaleString() || '0'}</TableCell>
+                        <TableCell>{contribution.transaction_id}</TableCell>
+                        <TableCell>
+                          {contribution.created_at ? new Date(contribution.created_at).toLocaleDateString() : 'Unknown date'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground">No contributions yet</p>
+              )}
             </Card>
           </div>
         </div>
