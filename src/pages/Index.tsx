@@ -1,58 +1,21 @@
 
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, UserPlus, LogOut, Crown, Shield } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Loader2 } from "lucide-react";
 import { DashboardStats } from "@/components/DashboardStats";
+import { GroupDetails } from "@/components/GroupDetails";
+import { MembersList } from "@/components/MembersList";
+import { ContributionsTable } from "@/components/ContributionsTable";
+import { EmptyGroupState } from "@/components/EmptyGroupState";
+import { OfflineDetection } from "@/components/OfflineDetection";
 
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Configure for offline support
-  useEffect(() => {
-    // Enable cache persistence (implemented through the query client)
-    const onlineStatus = () => {
-      if (navigator.onLine) {
-        toast({
-          title: "You are online",
-          description: "Data will sync with the server",
-        });
-        // Refetch data when back online
-        queryClient.invalidateQueries();
-      } else {
-        toast({
-          title: "You are offline",
-          description: "The app will continue to work with cached data",
-          variant: "destructive",
-        });
-      }
-    };
-
-    window.addEventListener('online', onlineStatus);
-    window.addEventListener('offline', onlineStatus);
-
-    return () => {
-      window.removeEventListener('online', onlineStatus);
-      window.removeEventListener('offline', onlineStatus);
-    };
-  }, [queryClient, toast]);
 
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['userGroups'],
@@ -81,7 +44,7 @@ export default function Index() {
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 60 * 60 * 1000, // 1 hour (cache persists longer for offline usage)
+    gcTime: 60 * 60 * 1000, // 1 hour (cache persists longer for offline usage)
     retry: 3,
   });
 
@@ -107,61 +70,9 @@ export default function Index() {
     },
     enabled: !!groups?.[0]?.id,
     staleTime: 5 * 60 * 1000,
-    cacheTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     retry: 3,
   });
-
-  const handleLeaveGroup = async () => {
-    if (!user || !groups?.[0]?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('group_members')
-        .delete()
-        .eq('group_id', groups[0].id)
-        .eq('member_id', user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "You have left the group successfully",
-      });
-      
-      navigate('/');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRoleChange = async (memberId: string, newRole: string) => {
-    if (!groups?.[0]?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('group_members')
-        .update({ role: newRole })
-        .eq('group_id', groups[0].id)
-        .eq('member_id', memberId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Member role updated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   if (groupsLoading || membersLoading) {
     return (
@@ -176,112 +87,29 @@ export default function Index() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <OfflineDetection />
       <DashboardHeader />
       
       <DashboardStats />
       
       {currentGroup ? (
         <div className="space-y-8">
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">{currentGroup.name}</h2>
-            <p className="text-muted-foreground mb-4">{currentGroup.description}</p>
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="font-semibold">Target Amount:</p>
-                <p className="text-xl text-primary">
-                  KES {currentGroup.target_amount?.toLocaleString() || '0'}
-                </p>
-              </div>
-              <Button
-                variant="destructive"
-                onClick={handleLeaveGroup}
-                disabled={isAdmin}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Leave Group
-              </Button>
-            </div>
-          </Card>
+          <GroupDetails group={currentGroup} isAdmin={isAdmin} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-4">Members</h3>
-              <div className="space-y-4">
-                {groupMembers?.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent/10 rounded-lg">
-                    <div>
-                      <p className="font-medium">{member.profiles?.full_name || 'Unknown'}</p>
-                      <p className="text-sm text-muted-foreground">{member.profiles?.phone_number || 'No phone'}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {member.role === 'admin' && (
-                        <Crown className="h-4 w-4 text-yellow-500" />
-                      )}
-                      {member.role === 'treasurer' && (
-                        <Shield className="h-4 w-4 text-blue-500" />
-                      )}
-                      {isAdmin && member.member_id !== user.id && (
-                        <select
-                          value={member.role}
-                          onChange={(e) => handleRoleChange(member.member_id, e.target.value)}
-                          className="text-sm border rounded p-1"
-                        >
-                          <option value="member">Member</option>
-                          <option value="treasurer">Treasurer</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {isAdmin && (
-                <Button className="mt-4 w-full flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Invite Member
-                </Button>
-              )}
-            </Card>
+            <MembersList 
+              groupMembers={groupMembers || []} 
+              isAdmin={isAdmin} 
+              groupId={currentGroup.id} 
+            />
 
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-4">Recent Contributions</h3>
-              {currentGroup.contributions && currentGroup.contributions.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Member</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Transaction ID</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentGroup.contributions?.map((contribution) => (
-                      <TableRow key={contribution.transaction_id}>
-                        <TableCell>{contribution.profiles?.full_name || 'Unknown'}</TableCell>
-                        <TableCell>KES {contribution.amount?.toLocaleString() || '0'}</TableCell>
-                        <TableCell>{contribution.transaction_id}</TableCell>
-                        <TableCell>
-                          {contribution.created_at ? new Date(contribution.created_at).toLocaleDateString() : 'Unknown date'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-center text-muted-foreground">No contributions yet</p>
-              )}
-            </Card>
+            <ContributionsTable 
+              contributions={currentGroup.contributions || []} 
+            />
           </div>
         </div>
       ) : (
-        <Card className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">
-            You haven't joined any groups yet. Create one to get started!
-          </p>
-          <Button onClick={() => navigate('/onboarding')}>Create Group</Button>
-        </Card>
+        <EmptyGroupState />
       )}
     </div>
   );
