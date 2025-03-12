@@ -1,22 +1,29 @@
-
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/react-query";
+import { Toaster } from "@/components/ui/toaster";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import GroupPage from "./pages/GroupPage";
-import UserGuide from "./pages/UserGuide";
+import { Route, Routes } from "react-router-dom";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Onboarding />} />
-        <Route path="/dashboard" element={<Index />} />
-        <Route path="/auth" element={<Index />} /> {/* Redirect auth to dashboard */}
-        <Route path="/group/:id" element={<GroupPage />} />
-        <Route path="/guide" element={<UserGuide />} />
-      </Routes>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/group/:groupId" element={<GroupPage />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
