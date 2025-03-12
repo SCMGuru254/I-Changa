@@ -1,60 +1,27 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+
+import { createContext, useContext, useState } from "react";
 
 type AuthContextType = {
-  user: User | null;
+  user: any | null;
   profile: any | null;
   signOut: () => Promise<void>;
 };
 
+// Create a default context with mock values
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  profile: null,
+  user: { id: "mock-user-id" }, // Provide a mock user instead of null
+  profile: { id: "mock-profile-id" },
   signOut: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  // Create a mock user and profile
+  const [user] = useState<any>({ id: "mock-user-id" });
+  const [profile] = useState<any>({ id: "mock-profile-id" });
 
-  useEffect(() => {
-    const fetchProfile = async (userId: string) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (!error && data) {
-        setProfile(data);
-      }
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  // Mock signOut function
   const signOut = async () => {
-    await supabase.auth.signOut();
+    console.log("Sign out clicked - authentication disabled for now");
   };
 
   return (
