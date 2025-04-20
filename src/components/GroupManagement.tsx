@@ -1,10 +1,11 @@
+
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, FileDown } from "lucide-react";
+import { LogOut, FileDown, Download } from "lucide-react";
 import generatePDF from "react-to-pdf";
-import { calculateRevenue } from "@/utils/pricingUtils";
+import { calculateRevenue, calculateTotalContributed, isTargetReached, formatCurrency } from "@/utils/pricingUtils";
 
 interface GroupManagementProps {
   groupId: string;
@@ -31,6 +32,7 @@ export function GroupManagement({
   const { toast } = useToast();
   const [isLeaving, setIsLeaving] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleLeaveGroup = async () => {
     setIsLeaving(true);
@@ -52,11 +54,11 @@ export function GroupManagement({
   };
 
   const handleExportPDF = async () => {
-    const totalContributed = contributions.reduce((sum, c) => sum + c.amount, 0);
-    const totalRevenue = calculateRevenue(contributions);
-    const isComplete = totalContributed >= targetAmount || new Date() >= new Date(endDate);
+    const totalContributed = calculateTotalContributed(contributions);
+    const targetReached = isTargetReached(totalContributed, targetAmount);
+    const completed = targetReached || new Date() >= new Date(endDate);
 
-    if (!isComplete) {
+    if (!completed) {
       toast({
         title: "Cannot Export Yet",
         description: "Contributions are still ongoing. Export will be available when target is reached or end date is passed.",
@@ -64,6 +66,8 @@ export function GroupManagement({
       });
       return;
     }
+
+    setIsExporting(true);
 
     const options = {
       filename: `group-${groupId}-contributions.pdf`,
@@ -84,8 +88,15 @@ export function GroupManagement({
         description: "Failed to export report. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsExporting(false);
     }
   };
+
+  const totalContributed = calculateTotalContributed(contributions);
+  const revenue = calculateRevenue(contributions);
+  const progress = (totalContributed / targetAmount) * 100;
+  const targetReached = isTargetReached(totalContributed, targetAmount);
 
   return (
     <Card className="p-6">
@@ -105,10 +116,11 @@ export function GroupManagement({
             <Button
               variant="outline"
               onClick={handleExportPDF}
+              disabled={isExporting}
               className="flex items-center gap-2"
             >
               <FileDown className="h-4 w-4" />
-              Export Report
+              {isExporting ? "Exporting..." : "Export Report"}
             </Button>
           )}
         </div>
@@ -119,13 +131,41 @@ export function GroupManagement({
           </p>
         )}
 
+        <div className="mt-4">
+          <h3 className="font-medium text-lg">Contribution Summary</h3>
+          <div className="mt-2 space-y-2">
+            <div className="flex justify-between">
+              <span>Total Contributed:</span>
+              <span className="font-medium">{formatCurrency(totalContributed)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Target Amount:</span>
+              <span className="font-medium">{formatCurrency(targetAmount)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Progress:</span>
+              <span className={`font-medium ${targetReached ? 'text-green-600' : ''}`}>
+                {progress.toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded">
+              <div
+                className="h-2 bg-primary rounded"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden element for PDF export */}
         <div ref={reportRef} className="hidden">
           <div className="p-8">
             <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
             <div className="mb-4">
-              <p>Total Contributed: KES {contributions.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}</p>
-              <p>Target Amount: KES {targetAmount.toLocaleString()}</p>
-              <p>Total Revenue Generated: KES {calculateRevenue(contributions).toLocaleString()}</p>
+              <p>Total Contributed: {formatCurrency(totalContributed)}</p>
+              <p>Target Amount: {formatCurrency(targetAmount)}</p>
+              <p>Total Revenue Generated: {formatCurrency(revenue)}</p>
+              {targetReached && <p className="text-green-600 font-bold">Target Successfully Reached!</p>}
             </div>
             <table className="w-full border-collapse">
               <thead>
@@ -139,7 +179,7 @@ export function GroupManagement({
                 {contributions.map((contribution, index) => (
                   <tr key={index}>
                     <td className="border p-2">{contribution.contributorName}</td>
-                    <td className="border p-2">KES {contribution.amount.toLocaleString()}</td>
+                    <td className="border p-2">{formatCurrency(contribution.amount)}</td>
                     <td className="border p-2">{new Date(contribution.date).toLocaleDateString()}</td>
                   </tr>
                 ))}
