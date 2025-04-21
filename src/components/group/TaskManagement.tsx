@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,18 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Task {
-  id: string;
-  group_id: string;
-  title: string;
-  description?: string;
-  assignee_id?: string;
-  is_completed: boolean;
-  due_date?: string;
-  created_at?: string;
-  assignee_name?: string;
-}
+import { Task } from "@/types";
 
 interface TaskManagementProps {
   groupId: string;
@@ -82,7 +72,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select(`*, assignee:assignee_id(full_name)`)
+        .select(`*, profiles:assignee_id(full_name)`)
         .eq('group_id', groupId)
         .order('due_date', { ascending: true });
 
@@ -90,7 +80,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
       const formattedTasks = (data || []).map(task => ({
         ...task,
-        assignee_name: task.assignee?.full_name || 'Unassigned'
+        assignee_name: task.profiles?.full_name || 'Unassigned'
       }));
 
       setTasks(formattedTasks);

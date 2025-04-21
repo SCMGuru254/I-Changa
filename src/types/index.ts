@@ -36,8 +36,7 @@ export interface GroupMember extends Member {
   leftAt?: string;
 }
 
-// New types
-
+// Task related types
 export interface Task {
   id: string;
   group_id: string;
@@ -48,8 +47,12 @@ export interface Task {
   due_date?: string;
   created_at?: string;
   assignee_name?: string;
+  profiles?: {
+    full_name: string;
+  };
 }
 
+// Message related types
 export interface Message {
   id: string;
   group_id: string;
@@ -58,4 +61,8 @@ export interface Message {
   is_voice: boolean;
   audio_url?: string;
   created_at: string;
+  sender_name?: string;
+  sender?: {
+    full_name: string;
+  };
 }

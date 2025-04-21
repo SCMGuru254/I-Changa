@@ -8,16 +8,7 @@ import { Mic, MicOff, Send, UserCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Message {
-  id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-  is_voice: boolean;
-  sender_name: string;
-  audio_url?: string;
-}
+import { Message } from "@/types";
 
 export function MessageList({ groupId }: { groupId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -69,7 +60,7 @@ export function MessageList({ groupId }: { groupId: string }) {
           created_at,
           is_voice,
           audio_url,
-          profiles(full_name)
+          sender:sender_id(full_name)
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
@@ -78,7 +69,7 @@ export function MessageList({ groupId }: { groupId: string }) {
 
       const formattedMessages = data.map(msg => ({
         ...msg,
-        sender_name: msg.profiles?.full_name || 'Unknown User'
+        sender_name: msg.sender?.full_name || 'Unknown User'
       }));
 
       setMessages(formattedMessages);
@@ -311,7 +302,7 @@ export function MessageList({ groupId }: { groupId: string }) {
         </Button>
         
         <Button
-          variant="primary"
+          variant="default"
           size="icon"
           onClick={sendMessage}
           disabled={(!messageInput.trim() && !audioBlob) || isRecording}
