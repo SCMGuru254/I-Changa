@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,13 +27,13 @@ import {
 
 interface Task {
   id: string;
-  title: string;
-  description: string;
-  assignee_id: string;
   group_id: string;
+  title: string;
+  description?: string;
+  assignee_id?: string;
   is_completed: boolean;
-  due_date: string;
-  created_at: string;
+  due_date?: string;
+  created_at?: string;
   assignee_name?: string;
 }
 
@@ -83,18 +82,15 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          profiles:assignee_id(full_name)
-        `)
+        .select(`*, assignee:assignee_id(full_name)`)
         .eq('group_id', groupId)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
 
-      const formattedTasks = data.map(task => ({
+      const formattedTasks = (data || []).map(task => ({
         ...task,
-        assignee_name: task.profiles?.full_name || 'Unassigned'
+        assignee_name: task.assignee?.full_name || 'Unassigned'
       }));
 
       setTasks(formattedTasks);
@@ -157,7 +153,6 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
       if (error) throw error;
 
-      // Update UI optimistically
       setTasks(prev => 
         prev.map(task => 
           task.id === taskId 

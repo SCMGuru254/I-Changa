@@ -1,8 +1,8 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { calculateTransactionFee, getLoyaltyDiscount } from "@/utils/pricingUtils";
 import { ManualEntryForm } from "./contribution/ManualEntryForm";
 import { MpesaMessageInput } from "./contribution/MpesaMessageInput";
 import { InviteSection } from "./contribution/InviteSection";

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,13 +78,12 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
       }
 
       if (!profileData) {
-        // User doesn't exist, create placeholder
+        // User doesn't exist, create pending invitation
         toast({
           title: "Info",
           description: "No user found with this phone number. They'll be added when they sign up.",
         });
         
-        // Store invitation in pending_invitations
         const { error } = await supabase
           .from('pending_invitations')
           .insert({

@@ -143,6 +143,76 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string | null
+          group_id: string | null
+          id: string
+          is_voice: boolean | null
+          sender_id: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_voice?: boolean | null
+          sender_id?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_voice?: boolean | null
+          sender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_invitations: {
+        Row: {
+          created_at: string | null
+          group_id: string | null
+          id: string
+          phone_number: string
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          phone_number: string
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          phone_number?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -166,6 +236,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          group_id: string | null
+          id: string
+          is_completed: boolean | null
+          title: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          group_id?: string | null
+          id?: string
+          is_completed?: boolean | null
+          title: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          group_id?: string | null
+          id?: string
+          is_completed?: boolean | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -1,3 +1,4 @@
+
 export interface Contribution {
   id: string;
   amount: number;
@@ -33,4 +34,28 @@ export interface GroupMember extends Member {
   groupId: string;
   status: 'active' | 'left';
   leftAt?: string;
+}
+
+// New types
+
+export interface Task {
+  id: string;
+  group_id: string;
+  title: string;
+  description?: string;
+  assignee_id?: string;
+  is_completed: boolean;
+  due_date?: string;
+  created_at?: string;
+  assignee_name?: string;
+}
+
+export interface Message {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  content: string;
+  is_voice: boolean;
+  audio_url?: string;
+  created_at: string;
 }
