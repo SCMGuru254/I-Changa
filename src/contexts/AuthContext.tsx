@@ -1,23 +1,34 @@
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthContextType = {
   user: any | null;
   profile: any | null;
   signOut: () => Promise<void>;
+  isAuthenticated: boolean;
 };
 
-// Create a default context with mock values
+// Create a context with default values
 const AuthContext = createContext<AuthContextType>({
-  user: { id: "mock-user-id" }, // Provide a mock user instead of null
-  profile: { id: "mock-profile-id" },
+  user: null,
+  profile: null,
   signOut: async () => {},
+  isAuthenticated: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // Create a mock user and profile
-  const [user] = useState<any>({ id: "mock-user-id" });
-  const [profile] = useState<any>({ id: "mock-profile-id" });
+  // In a real app, this would fetch the actual user session
+  // For now, we'll use a mock user with a proper UUID format
+  const [user] = useState<any>({ 
+    id: "123e4567-e89b-12d3-a456-426614174000", // Valid UUID format
+    email: "demo@example.com" 
+  });
+  const [profile] = useState<any>({ 
+    id: "123e4567-e89b-12d3-a456-426614174000", 
+    full_name: "Demo User" 
+  });
+  const [isAuthenticated] = useState(true);
 
   // Mock signOut function
   const signOut = async () => {
@@ -25,7 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, signOut }}>
+    <AuthContext.Provider value={{ user, profile, signOut, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

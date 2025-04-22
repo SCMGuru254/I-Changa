@@ -14,6 +14,7 @@ import { Header } from "@/components/onboarding/Header";
 import { StepCard } from "@/components/onboarding/StepCard";
 import { ProgressDots } from "@/components/onboarding/ProgressDots";
 import { Info } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const onboardingSteps = [
   {
@@ -36,10 +37,19 @@ const onboardingSteps = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleComplete = () => {
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
+
+  // If user is already authenticated, redirect to dashboard
+  // This prevents the loop when trying to create a group
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">

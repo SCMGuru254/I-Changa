@@ -8,8 +8,27 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import GroupPage from "./pages/GroupPage";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { OfflineDetection } from "./components/OfflineDetection";
+import { useAuth } from "./contexts/AuthContext";
+
+// Route guard for authenticated routes
+const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  return user ? <>{children}</> : <Navigate to="/onboarding" replace />;
+};
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<RequireAuth><Index /></RequireAuth>} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/group/:groupId" element={<RequireAuth><GroupPage /></RequireAuth>} />
+    </Routes>
+  );
+}
 
 function App() {
   return (
@@ -17,13 +36,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <OfflineDetection />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/group/:groupId" element={<GroupPage />} />
-          </Routes>
+          <AppRoutes />
           <Toaster />
         </BrowserRouter>
       </AuthProvider>

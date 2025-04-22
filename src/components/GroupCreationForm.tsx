@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Label } from "@/components/ui/label";
 
-export function GroupCreationForm() {
+export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -23,6 +24,10 @@ export function GroupCreationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Don't proceed if already loading
+    if (isLoading) return;
+    
     if (!user) {
       toast({
         title: "Error",
@@ -43,6 +48,8 @@ export function GroupCreationForm() {
     
     setIsLoading(true);
     try {
+      console.log("Creating group with user ID:", user.id);
+      
       // First, create the group
       const { data: group, error: groupError } = await supabase
         .from("groups")
@@ -82,8 +89,13 @@ export function GroupCreationForm() {
         description: "Group created successfully!",
       });
 
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+
       // Navigate to the group page
-      navigate(`/group/${group.id}`);
+      navigate(`/group/${group.id}`, { replace: true });
     } catch (error: any) {
       console.error("Error in group creation:", error);
       toast({
