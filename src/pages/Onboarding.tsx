@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";  // Add useEffect here
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
