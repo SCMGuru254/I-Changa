@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,20 +69,36 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
   const fetchTasks = async () => {
     try {
+      // First get all tasks
       const { data, error } = await supabase
         .from('tasks')
-        .select(`*, profiles:assignee_id(full_name)`)
+        .select(`*`)
         .eq('group_id', groupId)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
 
-      const formattedTasks = (data || []).map(task => ({
-        ...task,
-        assignee_name: task.profiles?.full_name || 'Unassigned'
+      // For tasks with assignees, get their names in a separate query
+      const tasksWithNames = await Promise.all((data || []).map(async (task) => {
+        if (task.assignee_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', task.assignee_id)
+            .single();
+          
+          return {
+            ...task,
+            assignee_name: profileData?.full_name || 'Unknown'
+          };
+        }
+        return {
+          ...task,
+          assignee_name: 'Unassigned'
+        };
       }));
 
-      setTasks(formattedTasks);
+      setTasks(tasksWithNames);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);

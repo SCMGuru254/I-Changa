@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -22,11 +21,9 @@ export function MessageList({ groupId }: { groupId: string }) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  // Fetch messages on component mount
   useEffect(() => {
     fetchMessages();
     
-    // Set up realtime subscription
     const channel = supabase
       .channel('group-messages')
       .on('postgres_changes', { 
@@ -60,19 +57,33 @@ export function MessageList({ groupId }: { groupId: string }) {
           created_at,
           is_voice,
           audio_url,
-          sender:sender_id(full_name)
+          group_id
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const formattedMessages = data.map(msg => ({
-        ...msg,
-        sender_name: msg.sender?.full_name || 'Unknown User'
+      const messagesWithSenders = await Promise.all(data.map(async (msg) => {
+        if (msg.sender_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', msg.sender_id)
+            .single();
+          
+          return {
+            ...msg,
+            sender_name: profileData?.full_name || 'Unknown User'
+          };
+        }
+        return {
+          ...msg,
+          sender_name: 'Unknown User'
+        };
       }));
 
-      setMessages(formattedMessages);
+      setMessages(messagesWithSenders);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -96,7 +107,6 @@ export function MessageList({ groupId }: { groupId: string }) {
       if (audioBlob) {
         await sendVoiceMessage();
       } else {
-        // Send text message
         const { error } = await supabase
           .from('messages')
           .insert({
@@ -136,7 +146,6 @@ export function MessageList({ groupId }: { groupId: string }) {
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setAudioBlob(audioBlob);
-        // Release microphone
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -163,7 +172,6 @@ export function MessageList({ groupId }: { groupId: string }) {
     if (!audioBlob) return;
 
     try {
-      // Upload audio file to Supabase Storage
       const fileName = `voice-${Date.now()}.webm`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('voice-messages')
@@ -171,12 +179,10 @@ export function MessageList({ groupId }: { groupId: string }) {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('voice-messages')
         .getPublicUrl(fileName);
 
-      // Save message with audio URL
       const { error } = await supabase
         .from('messages')
         .insert({

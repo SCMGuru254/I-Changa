@@ -47,9 +47,6 @@ export interface Task {
   due_date?: string;
   created_at?: string;
   assignee_name?: string;
-  profiles?: {
-    full_name: string;
-  };
 }
 
 // Message related types
@@ -62,7 +59,4 @@ export interface Message {
   audio_url?: string;
   created_at: string;
   sender_name?: string;
-  sender?: {
-    full_name: string;
-  };
 }
