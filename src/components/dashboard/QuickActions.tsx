@@ -20,6 +20,7 @@ export function QuickActions() {
   };
   
   const handleGroupCreationSuccess = () => {
+    // Close the sheet after successful group creation
     setIsSheetOpen(false);
   };
 
@@ -27,7 +28,7 @@ export function QuickActions() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
         <SheetTrigger asChild>
-          <Button className="w-full flex items-center gap-2">
+          <Button className="w-full flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
             <Plus className="h-4 w-4" />
             Create New Group
           </Button>
