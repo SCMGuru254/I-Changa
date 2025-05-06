@@ -9,12 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -26,9 +27,9 @@ export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
     e.preventDefault();
     
     // Don't proceed if already loading
-    if (isLoading) return;
+    if (formLoading || isLoading) return;
     
-    if (!user) {
+    if (!isAuthenticated || !user) {
       toast({
         title: "Error",
         description: "You must be logged in to create a group",
@@ -46,7 +47,7 @@ export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
     
-    setIsLoading(true);
+    setFormLoading(true);
     try {
       console.log("Creating group with user ID:", user.id);
       
@@ -104,9 +105,19 @@ export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setFormLoading(false);
     }
   };
+
+  // Show loading state if auth is still loading
+  if (isLoading) {
+    return (
+      <Card className="p-6 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading authentication...</p>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6">
@@ -156,8 +167,8 @@ export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Creating..." : "Create Group"}
+        <Button type="submit" className="w-full" disabled={formLoading || !isAuthenticated}>
+          {formLoading ? "Creating..." : "Create Group"}
         </Button>
       </form>
     </Card>

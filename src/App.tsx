@@ -11,10 +11,21 @@ import GroupPage from "./pages/GroupPage";
 import { Route, Routes, Navigate } from "react-router-dom";
 import { OfflineDetection } from "./components/OfflineDetection";
 import { useAuth } from "./contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 // Route guard for authenticated routes
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading authentication...</p>
+      </div>
+    );
+  }
+  
   return user ? <>{children}</> : <Navigate to="/onboarding" replace />;
 };
 
