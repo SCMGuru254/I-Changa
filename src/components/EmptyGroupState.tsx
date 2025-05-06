@@ -1,8 +1,9 @@
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { GroupCreationForm } from "@/components/GroupCreationForm";
 import { useState } from "react";
+import { PlusCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,27 +12,41 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { GroupCreationForm } from "@/components/GroupCreationForm";
-import { Plus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function EmptyGroupState() {
-  const navigate = useNavigate();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const queryClient = useQueryClient();
+  
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open);
+  };
   
   const handleGroupCreationSuccess = () => {
     setIsSheetOpen(false);
+    // Invalidate queries to refresh the data
+    queryClient.invalidateQueries({ queryKey: ['userGroups'] });
   };
-  
+
   return (
-    <Card className="p-6 text-center">
-      <p className="text-muted-foreground mb-4">
-        You haven't joined any groups yet. Create one to get started!
-      </p>
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+    <Card className="p-8 text-center space-y-6">
+      <div>
+        <img 
+          src="/lovable-uploads/5b74b201-662c-4821-b518-2ea917f97d36.png" 
+          alt="No Groups" 
+          className="w-32 h-32 mx-auto opacity-75"
+        />
+        <h2 className="text-2xl font-bold mt-4">No Groups Yet</h2>
+        <p className="text-muted-foreground mt-2">
+          Create your first savings group to get started
+        </p>
+      </div>
+
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
         <SheetTrigger asChild>
-          <Button className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Create Group
+          <Button className="flex items-center gap-2">
+            <PlusCircle className="w-4 h-4" />
+            Create New Group
           </Button>
         </SheetTrigger>
         <SheetContent>

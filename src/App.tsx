@@ -13,6 +13,9 @@ import { Route, Routes, Navigate } from "react-router-dom";
 import { OfflineDetection } from "./components/OfflineDetection";
 import { useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { DashboardLayout } from "./components/layout/DashboardLayout"; 
+import { MainContent } from "./components/dashboard/MainContent";
+import { Sidebar } from "./components/dashboard/Sidebar";
 
 // Route guard for authenticated routes
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
@@ -30,11 +33,24 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   return user ? <>{children}</> : <Navigate to="/onboarding" replace />;
 };
 
+function Dashboard() {
+  return (
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <MainContent />
+          <Sidebar />
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={<RequireAuth><Index /></RequireAuth>} />
+      <Route path="/" element={<Navigate to="/onboarding" replace />} />
+      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/group/:groupId" element={<RequireAuth><GroupPage /></RequireAuth>} />

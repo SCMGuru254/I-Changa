@@ -38,17 +38,19 @@ const onboardingSteps = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user, signOut } = useAuth();
   const { toast } = useToast();
 
   const handleComplete = () => {
-    console.log("Navigating to dashboard");
-    navigate("/dashboard");
+    console.log("Navigating to dashboard from onboarding");
+    // Force redirect to dashboard
+    window.location.href = "/dashboard";
   };
 
   // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
+      console.log("User is authenticated, redirecting to dashboard");
       navigate("/dashboard");
     }
   }, [isAuthenticated, navigate, isLoading]);

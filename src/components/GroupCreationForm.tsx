@@ -1,176 +1,190 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, addMonths } from "date-fns";
 
-export function GroupCreationForm({ onSuccess }: { onSuccess?: () => void }) {
-  const navigate = useNavigate();
+interface GroupCreationFormProps {
+  onSuccess?: () => void;
+}
+
+export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const [formLoading, setFormLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    targetAmount: "",
-    endDate: "",
+    targetAmount: 0,
+    endDate: addMonths(new Date(), 3),
   });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: name === "targetAmount" ? parseFloat(value) || 0 : value,
+    });
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setFormData({
+        ...formData,
+        endDate: date,
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Don't proceed if already loading
-    if (formLoading || isLoading) return;
-    
-    if (!isAuthenticated || !user) {
+    if (!user) {
       toast({
-        title: "Error",
-        description: "You must be logged in to create a group",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.name || !formData.description || !formData.targetAmount || !formData.endDate) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Authentication required",
+        description: "You need to be signed in to create a group",
         variant: "destructive",
       });
       return;
     }
     
-    setFormLoading(true);
+    setIsLoading(true);
+    
     try {
-      console.log("Creating group with user ID:", user.id);
+      console.log("Creating group with data:", formData);
+      console.log("Current user:", user);
       
-      // First, create the group
+      // Insert the group
       const { data: group, error: groupError } = await supabase
         .from("groups")
         .insert({
           name: formData.name,
           description: formData.description,
-          target_amount: parseFloat(formData.targetAmount),
-          end_date: formData.endDate,
-          creator_id: user.id,
+          target_amount: formData.targetAmount,
+          end_date: formData.endDate.toISOString(),
+          created_by: user.id,
+          status: "active",
         })
-        .select()
+        .select('id')
         .single();
-
+      
       if (groupError) {
-        console.error("Error creating group:", groupError);
         throw groupError;
       }
-
-      console.log("Group created successfully:", group);
-
-      // Add creator as admin member
+      
+      // Add the creator as an admin member
       const { error: memberError } = await supabase
         .from("group_members")
         .insert({
           group_id: group.id,
           member_id: user.id,
           role: "admin",
+          joined_at: new Date().toISOString(),
         });
-
+      
       if (memberError) {
-        console.error("Error adding member:", memberError);
         throw memberError;
       }
-
+      
       toast({
-        title: "Success!",
-        description: "Group created successfully!",
+        title: "Group Created",
+        description: `${formData.name} has been successfully created.`,
       });
-
+      
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['userGroups'] });
+      
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        targetAmount: 0,
+        endDate: addMonths(new Date(), 3),
+      });
+      
       // Call onSuccess callback if provided
       if (onSuccess) {
         onSuccess();
       }
-
-      // Navigate to the group page
-      navigate(`/group/${group.id}`, { replace: true });
     } catch (error: any) {
-      console.error("Error in group creation:", error);
+      console.error("Error creating group:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create group",
+        title: "Error creating group",
+        description: error.message || "Failed to create group. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setFormLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Show loading state if auth is still loading
-  if (isLoading) {
-    return (
-      <Card className="p-6 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2">Loading authentication...</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Group Name</Label>
-          <Input
-            id="name"
-            placeholder="Enter group name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Purpose/Description</Label>
-          <Textarea
-            id="description"
-            placeholder="Describe the purpose of this group"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="targetAmount">Target Amount (KES)</Label>
-          <Input
-            id="targetAmount"
-            type="number"
-            placeholder="Enter target amount"
-            value={formData.targetAmount}
-            onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="endDate">End Date</Label>
-          <Input
-            id="endDate"
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            required
-          />
-        </div>
-
-        <Button type="submit" className="w-full" disabled={formLoading || !isAuthenticated}>
-          {formLoading ? "Creating..." : "Create Group"}
-        </Button>
-      </form>
-    </Card>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Group Name</Label>
+        <Input
+          id="name"
+          name="name"
+          placeholder="e.g., Family Savings"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="What is this group for?"
+          value={formData.description}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="targetAmount">Target Amount (KES)</Label>
+        <Input
+          id="targetAmount"
+          name="targetAmount"
+          type="number"
+          min="1"
+          placeholder="50000"
+          value={formData.targetAmount || ""}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="endDate">End Date</Label>
+        <DatePicker
+          date={formData.endDate}
+          setDate={handleDateChange}
+        />
+      </div>
+      
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating...
+          </>
+        ) : (
+          "Create Group"
+        )}
+      </Button>
+    </form>
   );
 }
