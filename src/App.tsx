@@ -30,7 +30,7 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  return user ? <>{children}</> : <Navigate to="/onboarding" replace />;
+  return user ? <>{children}</> : <Navigate to="/auth" replace />;
 };
 
 function Dashboard() {
@@ -47,9 +47,20 @@ function Dashboard() {
 }
 
 function AppRoutes() {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading...</p>
+      </div>
+    );
+  }
+  
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/onboarding" replace />} />
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
       <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/onboarding" element={<Onboarding />} />
