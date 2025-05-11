@@ -3,9 +3,14 @@ import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, FileDown, Download } from "lucide-react";
+import { LogOut, FileDown } from "lucide-react";
 import generatePDF from "react-to-pdf";
-import { calculateRevenue, calculateTotalContributed, isTargetReached, formatCurrency } from "@/utils/pricingUtils";
+import { 
+  calculateRevenue, 
+  calculateTotalContributed, 
+  isTargetReached, 
+  formatCurrency 
+} from "@/utils/contributionUtils";
 
 interface GroupManagementProps {
   groupId: string;
