@@ -63,7 +63,7 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
       console.log("Creating group with data:", formData);
       console.log("Current user:", user);
       
-      // Insert the group
+      // Insert the group - Fixed property name from created_by to creator_id
       const { data: group, error: groupError } = await supabase
         .from("groups")
         .insert({
@@ -71,7 +71,7 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
           description: formData.description,
           target_amount: formData.targetAmount,
           end_date: formData.endDate.toISOString(),
-          created_by: user.id,
+          creator_id: user.id,
           status: "active",
         })
         .select('id')
