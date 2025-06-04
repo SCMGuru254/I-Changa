@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Contribution } from "@/types";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabaseClient";
 
 // Simulated API call
 const fetchContributions = async (): Promise<Contribution[]> => {
@@ -40,6 +43,28 @@ export function ContributionsList() {
     queryKey: ['contributions'],
     queryFn: fetchContributions,
   });
+
+  const isAdmin = true; // Replace with actual admin check
+
+  // Replace Supabase logic with placeholder functions
+  const handleApproval = async (contributionId: string, isApproved: boolean) => {
+    try {
+      // Placeholder logic for approval
+      console.log(`Contribution ${contributionId} has been ${isApproved ? 'approved' : 'rejected'}.`);
+
+      toast({
+        title: 'Approval Updated',
+        description: `Contribution has been ${isApproved ? 'approved' : 'rejected'}.`,
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update approval status.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -90,7 +115,7 @@ export function ContributionsList() {
                 <h3 className="font-semibold">{contribution.contributorName}</h3>
                 <p className="text-sm text-muted-foreground">{contribution.phoneNumber}</p>
                 <p className="text-sm text-muted-foreground">
-                  Transaction ID: {contribution.transactionId}
+                  Transaction ID: {isAdmin ? contribution.transactionId : 'Hidden'}
                 </p>
               </div>
               <div className="text-right">
@@ -102,6 +127,14 @@ export function ContributionsList() {
                 </p>
               </div>
             </div>
+            {isAdmin && (
+              <div className="flex space-x-2 mt-4">
+                <Button onClick={() => handleApproval(contribution.id, true)}>Approve</Button>
+                <Button onClick={() => handleApproval(contribution.id, false)} variant="destructive">
+                  Reject
+                </Button>
+              </div>
+            )}
           </Card>
         ))}
       </div>

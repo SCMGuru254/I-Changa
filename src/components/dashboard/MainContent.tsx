@@ -4,6 +4,7 @@ import { GroupAgenda } from "../GroupAgenda";
 import { DashboardStats } from "../DashboardStats";
 import { GroupsList } from "./GroupsList";
 import { ContributionsList } from "../ContributionsList";
+import { GamificationDashboard } from '../gamification/GamificationDashboard';
 
 export function MainContent() {
   return (
@@ -11,7 +12,10 @@ export function MainContent() {
       <SystemStatus />
       <QuickActions />
       <GroupAgenda />
-      <DashboardStats />
+      <div className="space-y-6">
+        <DashboardStats />
+        <GamificationDashboard />
+      </div>
       <GroupsList />
       
       <div>

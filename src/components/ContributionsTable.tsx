@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -11,9 +10,10 @@ import { Card } from "@/components/ui/card";
 
 interface ContributionsTableProps {
   contributions: any[];
+  isAdmin: boolean; // Add isAdmin prop to determine if the user is an admin
 }
 
-export function ContributionsTable({ contributions }: ContributionsTableProps) {
+export function ContributionsTable({ contributions, isAdmin }: ContributionsTableProps) {
   return (
     <Card className="p-6">
       <h3 className="text-xl font-semibold mb-4">Recent Contributions</h3>
@@ -32,7 +32,7 @@ export function ContributionsTable({ contributions }: ContributionsTableProps) {
               <TableRow key={contribution.transaction_id}>
                 <TableCell>{contribution.profiles?.full_name || 'Unknown'}</TableCell>
                 <TableCell>KES {contribution.amount?.toLocaleString() || '0'}</TableCell>
-                <TableCell>{contribution.transaction_id}</TableCell>
+                <TableCell>{isAdmin ? contribution.transaction_id : 'Hidden'}</TableCell>
                 <TableCell>
                   {contribution.created_at ? new Date(contribution.created_at).toLocaleDateString() : 'Unknown date'}
                 </TableCell>

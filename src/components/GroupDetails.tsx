@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -6,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { PDFExport } from './PDFExport';
+import { useEffect, useState } from "react";
 
 interface GroupDetailsProps {
   group: any;
@@ -16,6 +17,13 @@ export function GroupDetails({ group, isAdmin }: GroupDetailsProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showReport, setShowReport] = useState(false);
+
+  useEffect(() => {
+    if (group && group.total_contributions >= group.target_amount) {
+      setShowReport(true);
+    }
+  }, [group]);
 
   const handleLeaveGroup = async () => {
     if (!user || !group?.id) return;
@@ -65,6 +73,19 @@ export function GroupDetails({ group, isAdmin }: GroupDetailsProps) {
           Leave Group
         </Button>
       </div>
+      {showReport && group && (
+        <PDFExport
+          summary={{
+            totalAmount: group.total_contributions,
+            targetAmount: group.target_amount,
+            contributorsCount: group.member_count,
+            startDate: group.created_at,
+            endDate: new Date().toISOString(),
+            groupName: group.name,
+            contributions: group.contributions || [],
+          }}
+        />
+      )}
     </Card>
   );
 }

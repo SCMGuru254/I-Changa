@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,9 @@ import { TaskManagement } from "@/components/group/TaskManagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GroupLeaderboard } from '@/components/GroupLeaderboard';
+import { ContributionAnalytics } from '@/components/ContributionAnalytics';
+import { AuditLogs } from '@/components/AuditLogs';
 
 export default function GroupPage() {
   const { groupId } = useParams();
@@ -183,6 +185,10 @@ export default function GroupPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <ContributionAnalytics />
+      <GroupLeaderboard />
+      <AuditLogs />
     </div>
   );
 }
