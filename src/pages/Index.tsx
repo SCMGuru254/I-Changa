@@ -43,8 +43,8 @@ export default function Index() {
       }
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour (cache persists longer for offline usage)
+    staleTime: 5 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     retry: 3,
   });
 
@@ -105,6 +105,7 @@ export default function Index() {
 
             <ContributionsTable 
               contributions={currentGroup.contributions || []} 
+              isAdmin={isAdmin}
             />
           </div>
         </div>

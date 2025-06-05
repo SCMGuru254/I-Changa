@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -10,10 +11,10 @@ import { Card } from "@/components/ui/card";
 
 interface ContributionsTableProps {
   contributions: any[];
-  isAdmin: boolean; // Add isAdmin prop to determine if the user is an admin
+  isAdmin?: boolean;
 }
 
-export function ContributionsTable({ contributions, isAdmin }: ContributionsTableProps) {
+export function ContributionsTable({ contributions, isAdmin = false }: ContributionsTableProps) {
   return (
     <Card className="p-6">
       <h3 className="text-xl font-semibold mb-4">Recent Contributions</h3>

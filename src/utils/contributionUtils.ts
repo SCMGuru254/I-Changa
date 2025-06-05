@@ -1,39 +1,38 @@
 
-/**
- * Utility functions for handling contribution data
- */
-
-/**
- * Calculate the total contributed amount from all contributions
- */
-export const calculateTotalContributed = (contributions: Array<{ amount: number; memberCount?: number }>): number => {
-  return contributions.reduce((total, contribution) => total + contribution.amount, 0);
+export const calculateTotalContributions = (contributions: any[]): number => {
+  return contributions.reduce((total, contribution) => total + (contribution.amount || 0), 0);
 };
 
-/**
- * Check if the target amount has been reached
- */
-export const isTargetReached = (totalContributed: number, targetAmount: number): boolean => {
-  return totalContributed >= targetAmount;
+export const calculateProgress = (current: number, target: number): number => {
+  if (target === 0) return 0;
+  return Math.min((current / target) * 100, 100);
 };
 
-/**
- * Format a number as currency (KES)
- */
 export const formatCurrency = (amount: number): string => {
-  return amount.toLocaleString('en-KE', {
+  return new Intl.NumberFormat('en-KE', {
     style: 'currency',
     currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
+  }).format(amount);
 };
 
-/**
- * Calculate revenue (simplified placeholder function)
- * In a real app, this would include more complex calculations
- */
-export const calculateRevenue = (contributions: Array<{ amount: number; memberCount?: number }>): number => {
-  // Simplified revenue calculation example - could be updated with actual business logic
-  return contributions.reduce((total, contribution) => total + contribution.amount, 0);
+export const getDaysRemaining = (endDate: string): number => {
+  const end = new Date(endDate);
+  const now = new Date();
+  const diffTime = end.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+};
+
+export const getGroupStatus = (endDate: string, targetAmount: number, currentAmount: number): 'active' | 'completed' | 'expired' => {
+  const daysRemaining = getDaysRemaining(endDate);
+  
+  if (currentAmount >= targetAmount) {
+    return 'completed';
+  }
+  
+  if (daysRemaining <= 0) {
+    return 'expired';
+  }
+  
+  return 'active';
 };

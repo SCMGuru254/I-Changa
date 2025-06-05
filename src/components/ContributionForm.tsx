@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualEntryForm } from "./contribution/ManualEntryForm";
 import { MpesaMessageInput } from "./contribution/MpesaMessageInput";
@@ -10,6 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { parseMpesaMessage } from "@/utils/mpesaParser";
 import { useOffline } from '@/hooks/use-offline';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function ContributionForm() {
   const { groupId } = useParams();
@@ -21,7 +26,7 @@ export function ContributionForm() {
     amount: "",
     transactionId: "",
     confirmationMessage: "",
-    screenshot: null,
+    screenshot: null as File | null,
   });
   const [mpesaMessage, setMpesaMessage] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -29,19 +34,11 @@ export function ContributionForm() {
 
   const isOffline = useOffline();
 
-  const handleNotification = (message: string, variant: 'default' | 'destructive' | 'success') => {
-    toast({
-      title: variant === 'success' ? 'Success!' : 'Error',
-      description: message,
-      variant,
-    });
-  };
-
   const handleOfflineSubmit = () => {
     const offlineContributions = JSON.parse(localStorage.getItem('offlineContributions') || '[]');
     offlineContributions.push({
       group_id: groupId,
-      contributor_id: user.id,
+      contributor_id: user?.id,
       amount: parseFloat(formData.amount),
       transaction_id: formData.transactionId,
     });
@@ -49,7 +46,6 @@ export function ContributionForm() {
     toast({
       title: 'Offline Mode',
       description: 'Contribution saved locally. It will sync when you are back online.',
-      variant: 'default',
     });
   };
 
@@ -80,7 +76,6 @@ export function ContributionForm() {
       toast({
         title: 'Success!',
         description: 'Contribution recorded successfully.',
-        variant: 'default',
       });
 
       setFormData({
@@ -107,17 +102,15 @@ export function ContributionForm() {
     const parsedMessage = parseMpesaMessage(message);
     if (parsedMessage) {
       setFormData({
+        ...formData,
         contributorName: parsedMessage.contributorName,
         phoneNumber: parsedMessage.phoneNumber,
         amount: parsedMessage.amount.toString(),
         transactionId: parsedMessage.transactionId,
-        confirmationMessage: "",
-        screenshot: null,
       });
       toast({
         title: "Success",
         description: "M-Pesa message parsed successfully",
-        variant: 'default',
       });
     } else {
       toast({
@@ -128,15 +121,19 @@ export function ContributionForm() {
     }
   };
 
-  const handleManualConfirmation = async (confirmationMessage: string, screenshot: File | null) => {
+  const handleManualConfirmation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !groupId) return;
+
+    setIsSubmitting(true);
     try {
       const { error } = await supabase
         .from('manual_confirmations')
         .insert({
           group_id: groupId,
           contributor_id: user.id,
-          confirmation_message: confirmationMessage,
-          screenshot_url: screenshot ? URL.createObjectURL(screenshot) : null,
+          confirmation_message: formData.confirmationMessage,
+          screenshot_url: formData.screenshot ? URL.createObjectURL(formData.screenshot) : null,
         });
 
       if (error) throw error;
@@ -144,14 +141,21 @@ export function ContributionForm() {
       toast({
         title: 'Confirmation Submitted',
         description: 'Your manual confirmation has been submitted for admin review.',
-        variant: 'success',
       });
-    } catch (error) {
+      
+      setFormData({
+        ...formData,
+        confirmationMessage: "",
+        screenshot: null,
+      });
+    } catch (error: any) {
       toast({
         title: 'Error',
         description: 'Failed to submit manual confirmation.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -159,14 +163,13 @@ export function ContributionForm() {
     if (!isOffline) {
       const offlineContributions = JSON.parse(localStorage.getItem('offlineContributions') || '[]');
       if (offlineContributions.length > 0) {
-        offlineContributions.forEach(async (contribution) => {
+        offlineContributions.forEach(async (contribution: any) => {
           try {
             const { error } = await supabase.from('contributions').insert([contribution]);
             if (!error) {
               toast({
                 title: 'Sync Success',
                 description: 'Offline contributions synced successfully.',
-                variant: 'default',
               });
             }
           } catch (error) {
@@ -176,7 +179,7 @@ export function ContributionForm() {
         localStorage.removeItem('offlineContributions');
       }
     }
-  }, [isOffline]);
+  }, [isOffline, toast]);
 
   return (
     <Card className="p-6">
@@ -208,25 +211,31 @@ export function ContributionForm() {
         </TabsContent>
 
         <TabsContent value="confirmation">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleManualConfirmation(formData.confirmationMessage, formData.screenshot);
-            }}
-          >
-            <textarea
-              placeholder="Paste M-Pesa confirmation message here..."
-              value={formData.confirmationMessage}
-              onChange={(e) => setFormData({ ...formData, confirmationMessage: e.target.value })}
-              className="w-full mb-4"
-            />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFormData({ ...formData, screenshot: e.target.files[0] })}
-              className="mb-4"
-            />
-            <Button type="submit">Submit Confirmation</Button>
+          <form onSubmit={handleManualConfirmation} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="confirmation-message">Confirmation Message</Label>
+              <Textarea
+                id="confirmation-message"
+                placeholder="Paste M-Pesa confirmation message here..."
+                value={formData.confirmationMessage}
+                onChange={(e) => setFormData({ ...formData, confirmationMessage: e.target.value })}
+                rows={4}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="screenshot">Screenshot (Optional)</Label>
+              <Input
+                id="screenshot"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFormData({ ...formData, screenshot: e.target.files?.[0] || null })}
+              />
+            </div>
+            
+            <Button type="submit" disabled={isSubmitting || !formData.confirmationMessage.trim()}>
+              {isSubmitting ? "Submitting..." : "Submit Confirmation"}
+            </Button>
           </form>
         </TabsContent>
       </Tabs>
