@@ -127,13 +127,15 @@ export function ContributionForm() {
 
     setIsSubmitting(true);
     try {
+      // For now, we'll store manual confirmations as regular contributions with a note
       const { error } = await supabase
-        .from('manual_confirmations')
+        .from('contributions')
         .insert({
           group_id: groupId,
           contributor_id: user.id,
-          confirmation_message: formData.confirmationMessage,
-          screenshot_url: formData.screenshot ? URL.createObjectURL(formData.screenshot) : null,
+          amount: 0, // Set to 0 for manual confirmations pending admin review
+          transaction_id: `MANUAL_${Date.now()}`,
+          status: 'pending'
         });
 
       if (error) throw error;

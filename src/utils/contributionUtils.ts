@@ -36,3 +36,21 @@ export const getGroupStatus = (endDate: string, targetAmount: number, currentAmo
   
   return 'active';
 };
+
+// Additional utility functions needed by GroupManagement
+export const calculateTotalContributed = (contributions: Array<{ amount: number }>): number => {
+  return contributions.reduce((total, contribution) => total + contribution.amount, 0);
+};
+
+export const calculateRevenue = (contributions: Array<{ amount: number; memberCount: number }>): number => {
+  // Calculate revenue based on contribution fees or membership
+  return contributions.reduce((total, contribution) => {
+    // Assuming a small fee per contribution for revenue calculation
+    const fee = contribution.amount * 0.01; // 1% fee
+    return total + fee;
+  }, 0);
+};
+
+export const isTargetReached = (currentAmount: number, targetAmount: number): boolean => {
+  return currentAmount >= targetAmount;
+};
