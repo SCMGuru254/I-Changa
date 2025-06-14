@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/onboarding/Header";
 import { StepCard } from "@/components/onboarding/StepCard";
 import { ProgressDots } from "@/components/onboarding/ProgressDots";
+import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -37,14 +38,22 @@ const onboardingSteps = [
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [showGuidedTour, setShowGuidedTour] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, user, signOut } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
 
   const handleComplete = () => {
-    console.log("Navigating to dashboard from onboarding");
-    // Force redirect to dashboard
-    window.location.href = "/dashboard";
+    setShowGuidedTour(true);
+  };
+
+  const handleTourComplete = () => {
+    setShowGuidedTour(false);
+    toast({
+      title: "Welcome to Trust Circle!",
+      description: "You're all set up and ready to start managing your contribution groups.",
+    });
+    navigate("/dashboard");
   };
 
   // If user is already authenticated, redirect to dashboard
@@ -56,57 +65,72 @@ export default function Onboarding() {
   }, [isAuthenticated, navigate, isLoading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8 h-screen flex flex-col justify-between">
-        <Header />
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto px-4 py-8 h-screen flex flex-col justify-between">
+          <Header />
 
-        <div className="flex-1 flex items-center justify-center my-8">
-          <Carousel 
-            className="w-full max-w-lg" 
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            setApi={(api) => {
-              if (api) {
-                api.on("select", () => {
-                  setCurrentStep(api.selectedScrollSnap());
-                });
-              }
-            }}
-          >
-            <CarouselContent>
-              {onboardingSteps.map((step, index) => (
-                <CarouselItem key={index}>
-                  <StepCard {...step} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
-        </div>
+          <div className="flex-1 flex items-center justify-center my-8">
+            <Carousel 
+              className="w-full max-w-lg" 
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              setApi={(api) => {
+                if (api) {
+                  api.on("select", () => {
+                    setCurrentStep(api.selectedScrollSnap());
+                  });
+                }
+              }}
+            >
+              <CarouselContent>
+                {onboardingSteps.map((step, index) => (
+                  <CarouselItem key={index}>
+                    <StepCard {...step} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
+          </div>
 
-        <div className="flex flex-col items-center gap-4 pb-8">
-          <ProgressDots steps={onboardingSteps.length} currentStep={currentStep} />
-          <Button
-            size="lg"
-            className="w-full max-w-xs animate-pulse"
-            onClick={handleComplete}
-          >
-            Get Started
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => navigate('/guide')}
-          >
-            <Info className="w-4 h-4" />
-            Learn More About iChanga
-          </Button>
+          <div className="flex flex-col items-center gap-4 pb-8">
+            <ProgressDots steps={onboardingSteps.length} currentStep={currentStep} />
+            <div className="flex gap-3 w-full max-w-xs">
+              <Button
+                size="lg"
+                className="flex-1 animate-pulse"
+                onClick={handleComplete}
+              >
+                Get Started
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => navigate('/dashboard')}
+              >
+                Skip
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => navigate('/guide')}
+            >
+              <Info className="w-4 h-4" />
+              Learn More About iChanga
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showGuidedTour && (
+        <GuidedTour onComplete={handleTourComplete} />
+      )}
+    </>
   );
 }

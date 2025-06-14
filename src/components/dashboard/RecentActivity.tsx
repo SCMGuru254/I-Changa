@@ -1,123 +1,104 @@
 
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
+import { Activity, TrendingUp, Users, Plus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
-interface Activity {
+interface ActivityItem {
   id: string;
-  type: 'contribution' | 'member_joined' | 'group_created' | 'payment';
-  user: {
-    name: string;
-    avatar?: string;
-  };
-  description: string;
+  type: 'contribution' | 'member_joined' | 'group_created';
+  message: string;
+  timestamp: string;
   amount?: number;
-  timestamp: Date;
-  groupName?: string;
 }
 
 export function RecentActivity() {
-  const activities: Activity[] = [
+  const activities: ActivityItem[] = [
     {
       id: '1',
       type: 'contribution',
-      user: { name: 'John Doe' },
-      description: 'made a contribution',
+      message: 'Sarah contributed to Family Savings',
+      timestamp: '2 hours ago',
       amount: 5000,
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      groupName: 'Family Savings',
     },
     {
       id: '2',
       type: 'member_joined',
-      user: { name: 'Sarah Wilson' },
-      description: 'joined the group',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      groupName: 'Office Chama',
+      message: 'Mike joined Office Lunch Fund',
+      timestamp: '5 hours ago',
     },
     {
       id: '3',
       type: 'group_created',
-      user: { name: 'Mike Johnson' },
-      description: 'created a new group',
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      groupName: 'Emergency Fund',
+      message: 'Created new group: Weekend Trip',
+      timestamp: '1 day ago',
     },
   ];
 
-  const getActivityIcon = (type: Activity['type']) => {
+  const getActivityIcon = (type: string) => {
     switch (type) {
       case 'contribution':
-        return '💰';
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
       case 'member_joined':
-        return '👋';
+        return <Users className="h-4 w-4 text-blue-500" />;
       case 'group_created':
-        return '🎯';
-      case 'payment':
-        return '💸';
+        return <Plus className="h-4 w-4 text-purple-500" />;
       default:
-        return '📝';
+        return <Activity className="h-4 w-4" />;
     }
   };
 
-  const getActivityColor = (type: Activity['type']) => {
+  const getBadgeVariant = (type: string) => {
     switch (type) {
       case 'contribution':
-        return 'bg-green-100 text-green-800';
+        return 'default';
       case 'member_joined':
-        return 'bg-blue-100 text-blue-800';
+        return 'secondary';
       case 'group_created':
-        return 'bg-purple-100 text-purple-800';
-      case 'payment':
-        return 'bg-orange-100 text-orange-800';
+        return 'outline';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-      
-      <div className="space-y-4">
-        {activities.map((activity) => (
-          <div key={activity.id} className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={activity.user.avatar} />
-              <AvatarFallback>
-                {activity.user.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl">{getActivityIcon(activity.type)}</span>
-                <span className="font-medium text-sm">{activity.user.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {activity.description}
-                </span>
-                {activity.amount && (
-                  <Badge variant="secondary">
-                    KES {activity.amount.toLocaleString()}
-                  </Badge>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {activity.groupName && (
-                  <Badge className={getActivityColor(activity.type)}>
-                    {activity.groupName}
-                  </Badge>
-                )}
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center gap-2 mb-4">
+        <Activity className="h-5 w-5" />
+        <h3 className="text-lg font-semibold">Recent Activity</h3>
       </div>
+
+      {activities.length === 0 ? (
+        <EmptyState
+          icon={<Activity className="h-8 w-8" />}
+          title="No Recent Activity"
+          description="Your group activities will appear here once members start contributing and interacting."
+        />
+      ) : (
+        <div className="space-y-4">
+          {activities.map((activity) => (
+            <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+              <div className="mt-1">
+                {getActivityIcon(activity.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{activity.message}</p>
+                {activity.amount && (
+                  <p className="text-sm text-green-600 font-semibold">
+                    +KES {activity.amount.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {activity.timestamp}
+                </p>
+              </div>
+              <Badge variant={getBadgeVariant(activity.type)}>
+                {activity.type.replace('_', ' ')}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
     </Card>
   );
 }

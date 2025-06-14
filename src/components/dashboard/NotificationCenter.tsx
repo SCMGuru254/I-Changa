@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Notification {
   id: string;
@@ -46,6 +47,10 @@ export function NotificationCenter() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -65,15 +70,17 @@ export function NotificationCenter() {
 
       <div className="space-y-3">
         {notifications.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">
-            No notifications
-          </p>
+          <EmptyState
+            icon={<Bell className="h-8 w-8" />}
+            title="No Notifications"
+            description="You're all caught up! New notifications will appear here when there's activity in your groups."
+          />
         ) : (
           notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-3 rounded-lg border ${
-                notification.read ? 'bg-muted/20' : 'bg-card'
+              className={`p-3 rounded-lg border transition-colors ${
+                notification.read ? 'bg-muted/20' : 'bg-card hover:bg-accent/50'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -86,18 +93,33 @@ export function NotificationCenter() {
                     {notification.timestamp}
                   </p>
                 </div>
-                {!notification.read && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex gap-1">
+                  {!notification.read && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ))
+        )}
+        
+        {notifications.length > 0 && (
+          <div className="pt-2 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllNotifications}
+              className="w-full text-muted-foreground hover:text-foreground"
+            >
+              Clear All Notifications
+            </Button>
+          </div>
         )}
       </div>
     </Card>

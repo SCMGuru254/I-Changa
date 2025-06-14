@@ -1,63 +1,122 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { WifiOff, Wifi, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { Wifi, WifiOff } from "lucide-react";
 
 export function OfflineDetection() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showOfflineNotice, setShowOfflineNotice] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Enable cache persistence through the query client
     const handleOnline = () => {
       setIsOnline(true);
+      setShowOfflineNotice(false);
       toast({
-        title: "You are online",
-        description: "Data will sync with the server",
-        action: <Wifi className="h-4 w-4" />,
+        title: "Back Online",
+        description: "Your connection has been restored.",
       });
-      // Refetch data when back online
-      queryClient.invalidateQueries();
     };
 
     const handleOffline = () => {
       setIsOnline(false);
+      setShowOfflineNotice(true);
       toast({
-        title: "You are offline",
-        description: "The app will continue to work with cached data",
+        title: "Connection Lost",
+        description: "You're currently offline. Some features may be limited.",
         variant: "destructive",
-        action: <WifiOff className="h-4 w-4" />,
       });
     };
 
-    // Set initial state
-    setIsOnline(navigator.onLine);
-    
-    // Add event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    // Check connection status on mount
-    if (!navigator.onLine) {
-      handleOffline();
-    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [queryClient, toast]);
+  }, [toast]);
+
+  const retryConnection = () => {
+    if (navigator.onLine) {
+      setIsOnline(true);
+      setShowOfflineNotice(false);
+      toast({
+        title: "Connection Restored",
+        description: "You're back online!",
+      });
+    } else {
+      toast({
+        title: "Still Offline",
+        description: "Please check your internet connection.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <div className={`fixed top-0 right-0 m-4 z-50 ${isOnline ? 'hidden' : 'block'}`}>
-      {!isOnline && (
-        <div className="bg-destructive text-destructive-foreground px-4 py-2 rounded-md flex items-center gap-2">
-          <WifiOff className="h-4 w-4" />
-          <span>Offline Mode</span>
-        </div>
-      )}
-    </div>
+    <>
+      {/* Status Badge */}
+      <div className="fixed top-4 right-4 z-50">
+        <Badge
+          variant={isOnline ? "default" : "destructive"}
+          className="flex items-center gap-2"
+        >
+          {isOnline ? (
+            <Wifi className="h-3 w-3" />
+          ) : (
+            <WifiOff className="h-3 w-3" />
+          )}
+          {isOnline ? "Online" : "Offline"}
+        </Badge>
+      </div>
+
+      {/* Offline Notice */}
+      <AnimatePresence>
+        {showOfflineNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="fixed top-16 left-4 right-4 z-40"
+          >
+            <Card className="p-4 bg-destructive/10 border-destructive/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <WifiOff className="h-5 w-5 text-destructive" />
+                  <div>
+                    <h4 className="font-semibold text-sm">You're Offline</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Some features may be limited while offline
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={retryConnection}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Retry
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowOfflineNotice(false)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
