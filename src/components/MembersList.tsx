@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Crown, Shield } from "lucide-react";
@@ -41,11 +42,11 @@ export function MembersList({ groupMembers, isAdmin, groupId }: MembersListProps
   };
 
   // Add privacy options for phone numbers and profile pictures
-  const handlePrivacyToggle = async (memberId: string, field: 'phoneNumber' | 'profilePicture', isPrivate: boolean) => {
+  const handlePrivacyToggle = async (memberId: string, field: 'phone_number' | 'avatar_url', isPrivate: boolean) => {
     try {
       const { error } = await supabase
-        .from('members')
-        .update({ [field]: isPrivate ? null : user[field] })
+        .from('profiles')
+        .update({ [field]: isPrivate ? null : user?.[field] })
         .eq('id', memberId);
 
       if (error) throw error;
@@ -53,7 +54,6 @@ export function MembersList({ groupMembers, isAdmin, groupId }: MembersListProps
       toast({
         title: 'Privacy Updated',
         description: `${field} privacy has been updated successfully.`,
-        variant: 'success',
       });
     } catch (error) {
       toast({
@@ -90,7 +90,7 @@ export function MembersList({ groupMembers, isAdmin, groupId }: MembersListProps
               {member.role === 'treasurer' && (
                 <Shield className="h-4 w-4 text-blue-500" />
               )}
-              {isAdmin && member.member_id !== user.id && (
+              {isAdmin && member.member_id !== user?.id && (
                 <select
                   value={member.role}
                   onChange={(e) => handleRoleChange(member.member_id, e.target.value)}
@@ -103,7 +103,7 @@ export function MembersList({ groupMembers, isAdmin, groupId }: MembersListProps
               )}
               {isAdmin && (
                 <Button
-                  onClick={() => handlePrivacyToggle(member.id, 'phoneNumber', !member.profiles?.phone_number)}
+                  onClick={() => handlePrivacyToggle(member.profiles?.id, 'phone_number', !member.profiles?.phone_number)}
                   className="text-sm"
                 >
                   Toggle Phone Privacy
