@@ -149,14 +149,13 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
       
       console.log("Group created successfully:", group);
       
-      // Add the creator as an admin member
+      // Add the creator as an admin member (removed joined_at column)
       const { error: memberError } = await supabase
         .from("group_members")
         .insert({
           group_id: group.id,
           member_id: user.id,
           role: "admin",
-          joined_at: new Date().toISOString(),
         });
       
       if (memberError) {
