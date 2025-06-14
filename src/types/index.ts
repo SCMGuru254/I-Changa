@@ -60,3 +60,41 @@ export interface Message {
   created_at: string;
   sender_name?: string;
 }
+
+// Activity related types
+export interface ActivityMetadata {
+  amount?: number;
+  contributorName?: string;
+  memberName?: string;
+  groupName?: string;
+  taskTitle?: string;
+  assigneeName?: string;
+  senderName?: string;
+  isVoice?: boolean;
+}
+
+export interface Activity {
+  id: string;
+  user_id?: string;
+  group_id?: string;
+  activity_type: 'contribution' | 'member_joined' | 'group_created' | 'task_completed' | 'message_sent';
+  title: string;
+  description?: string;
+  metadata?: ActivityMetadata;
+  created_at: string;
+}
+
+// Achievement related types
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  points: number;
+  created_at?: string;
+}
+
+export interface AchievementWithStatus extends Achievement {
+  isUnlocked: boolean;
+  earned_at?: string;
+}

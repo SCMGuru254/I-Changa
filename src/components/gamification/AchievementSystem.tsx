@@ -7,16 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmptyState } from '@/components/ui/empty-state';
-
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string | null;
-  points: number;
-  isUnlocked: boolean;
-  earned_at?: string;
-}
+import { AchievementWithStatus } from '@/types';
 
 export function AchievementSystem() {
   const { user } = useAuth();
@@ -58,7 +49,7 @@ export function AchievementSystem() {
       );
 
       // Map achievements with unlock status
-      const achievementsWithStatus = (achievements || []).map(achievement => ({
+      const achievementsWithStatus: AchievementWithStatus[] = (achievements || []).map(achievement => ({
         ...achievement,
         isUnlocked: (userAchievements || []).some(ua => ua.achievement_id === achievement.id),
         earned_at: (userAchievements || []).find(ua => ua.achievement_id === achievement.id)?.earned_at

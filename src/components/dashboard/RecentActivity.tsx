@@ -7,15 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
-
-interface ActivityItem {
-  id: string;
-  activity_type: 'contribution' | 'member_joined' | 'group_created' | 'task_completed' | 'message_sent';
-  title: string;
-  description?: string;
-  created_at: string;
-  metadata?: any;
-}
+import { Activity as ActivityType, ActivityMetadata } from "@/types";
 
 export function RecentActivity() {
   const { user } = useAuth();
@@ -96,6 +88,19 @@ export function RecentActivity() {
     return `${Math.floor(diffInHours / 24)} days ago`;
   };
 
+  // Helper function to safely parse metadata
+  const parseMetadata = (metadata: any): ActivityMetadata => {
+    if (!metadata) return {};
+    if (typeof metadata === 'string') {
+      try {
+        return JSON.parse(metadata);
+      } catch {
+        return {};
+      }
+    }
+    return metadata as ActivityMetadata;
+  };
+
   if (isLoading) {
     return (
       <Card className="p-6">
@@ -125,32 +130,35 @@ export function RecentActivity() {
         />
       ) : (
         <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-              <div className="mt-1">
-                {getActivityIcon(activity.activity_type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{activity.title}</p>
-                {activity.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {activity.description}
+          {activities.map((activity) => {
+            const metadata = parseMetadata(activity.metadata);
+            return (
+              <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                <div className="mt-1">
+                  {getActivityIcon(activity.activity_type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{activity.title}</p>
+                  {activity.description && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {activity.description}
+                    </p>
+                  )}
+                  {metadata.amount && (
+                    <p className="text-sm text-green-600 font-semibold">
+                      +KES {metadata.amount.toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatTimestamp(activity.created_at)}
                   </p>
-                )}
-                {activity.metadata?.amount && (
-                  <p className="text-sm text-green-600 font-semibold">
-                    +KES {activity.metadata.amount.toLocaleString()}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatTimestamp(activity.created_at)}
-                </p>
+                </div>
+                <Badge variant={getBadgeVariant(activity.activity_type)}>
+                  {activity.activity_type.replace('_', ' ')}
+                </Badge>
               </div>
-              <Badge variant={getBadgeVariant(activity.activity_type)}>
-                {activity.activity_type.replace('_', ' ')}
-              </Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>
