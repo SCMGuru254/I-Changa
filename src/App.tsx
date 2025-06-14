@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import GroupPage from "./pages/GroupPage";
 import UserGuide from "./pages/UserGuide";
+import ProfilePage from "./pages/ProfilePage";
+import InsightsPage from "./pages/InsightsPage";
 import { Route, Routes, Navigate } from "react-router-dom";
 import { OfflineDetection } from "./components/OfflineDetection";
 import { useAuth } from "./contexts/AuthContext";
@@ -65,6 +67,8 @@ function AppRoutes() {
       <Route path="/auth" element={<Auth />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/group/:groupId" element={<RequireAuth><GroupPage /></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+      <Route path="/insights" element={<RequireAuth><InsightsPage /></RequireAuth>} />
       <Route path="/guide" element={<UserGuide />} />
     </Routes>
   );
