@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,52 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
     targetAmount: 0,
     endDate: addMonths(new Date(), 3),
   });
+
+  // Check and create profile if needed when component mounts
+  useEffect(() => {
+    const ensureUserProfile = async () => {
+      if (!user) return;
+      
+      console.log("Checking if user profile exists for:", user.id);
+      
+      // Check if profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+      
+      if (profileError && profileError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log("Profile doesn't exist, creating one for user:", user.id);
+        
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            phone_number: user.phone || null
+          });
+          
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          toast({
+            title: "Profile Creation Error",
+            description: "Failed to create user profile. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Profile created successfully");
+        }
+      } else if (profile) {
+        console.log("Profile already exists:", profile);
+      } else if (profileError) {
+        console.error("Error checking profile:", profileError);
+      }
+    };
+
+    ensureUserProfile();
+  }, [user, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -63,7 +109,26 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
       console.log("Creating group with data:", formData);
       console.log("Current user:", user);
       
-      // Insert the group - Fixed property name from created_by to creator_id
+      // Double-check that profile exists before creating group
+      const { data: profile, error: profileCheckError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+        
+      if (profileCheckError) {
+        console.error("Profile check error:", profileCheckError);
+        toast({
+          title: "Profile Error",
+          description: "Unable to verify user profile. Please refresh the page and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log("Profile verified:", profile);
+      
+      // Insert the group
       const { data: group, error: groupError } = await supabase
         .from("groups")
         .insert({
@@ -78,8 +143,11 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
         .single();
       
       if (groupError) {
+        console.error("Group creation error:", groupError);
         throw groupError;
       }
+      
+      console.log("Group created successfully:", group);
       
       // Add the creator as an admin member
       const { error: memberError } = await supabase
@@ -92,8 +160,11 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
         });
       
       if (memberError) {
+        console.error("Member insertion error:", memberError);
         throw memberError;
       }
+      
+      console.log("User added as admin member");
       
       toast({
         title: "Group Created",
