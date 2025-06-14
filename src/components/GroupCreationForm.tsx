@@ -1,16 +1,17 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/ui/date-picker";
-import { format, addMonths } from "date-fns";
+import { useProfileEnsurance } from "@/hooks/useProfileEnsurance";
+import { GroupFormData, getInitialFormData } from "@/types/GroupFormData";
+import { verifyUserProfile, createGroup, addUserAsAdmin } from "@/utils/groupCreationService";
 
 interface GroupCreationFormProps {
   onSuccess?: () => void;
@@ -21,58 +22,10 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    targetAmount: 0,
-    endDate: addMonths(new Date(), 3),
-  });
+  const [formData, setFormData] = useState<GroupFormData>(getInitialFormData());
 
-  // Check and create profile if needed when component mounts
-  useEffect(() => {
-    const ensureUserProfile = async () => {
-      if (!user) return;
-      
-      console.log("Checking if user profile exists for:", user.id);
-      
-      // Check if profile exists
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-      
-      if (profileError && profileError.code === 'PGRST116') {
-        // Profile doesn't exist, create it
-        console.log("Profile doesn't exist, creating one for user:", user.id);
-        
-        const { error: insertError } = await supabase
-          .from("profiles")
-          .insert({
-            id: user.id,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            phone_number: user.phone || null
-          });
-          
-        if (insertError) {
-          console.error("Error creating profile:", insertError);
-          toast({
-            title: "Profile Creation Error",
-            description: "Failed to create user profile. Please try again.",
-            variant: "destructive",
-          });
-        } else {
-          console.log("Profile created successfully");
-        }
-      } else if (profile) {
-        console.log("Profile already exists:", profile);
-      } else if (profileError) {
-        console.error("Error checking profile:", profileError);
-      }
-    };
-
-    ensureUserProfile();
-  }, [user, toast]);
+  // Ensure user profile exists
+  useProfileEnsurance();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -109,61 +62,14 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
       console.log("Creating group with data:", formData);
       console.log("Current user:", user);
       
-      // Double-check that profile exists before creating group
-      const { data: profile, error: profileCheckError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-        
-      if (profileCheckError) {
-        console.error("Profile check error:", profileCheckError);
-        toast({
-          title: "Profile Error",
-          description: "Unable to verify user profile. Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Verify profile exists
+      await verifyUserProfile(user.id);
       
-      console.log("Profile verified:", profile);
+      // Create the group
+      const group = await createGroup(formData, user.id);
       
-      // Insert the group
-      const { data: group, error: groupError } = await supabase
-        .from("groups")
-        .insert({
-          name: formData.name,
-          description: formData.description,
-          target_amount: formData.targetAmount,
-          end_date: formData.endDate.toISOString(),
-          creator_id: user.id,
-          status: "active",
-        })
-        .select('id')
-        .single();
-      
-      if (groupError) {
-        console.error("Group creation error:", groupError);
-        throw groupError;
-      }
-      
-      console.log("Group created successfully:", group);
-      
-      // Add the creator as an admin member (removed joined_at column)
-      const { error: memberError } = await supabase
-        .from("group_members")
-        .insert({
-          group_id: group.id,
-          member_id: user.id,
-          role: "admin",
-        });
-      
-      if (memberError) {
-        console.error("Member insertion error:", memberError);
-        throw memberError;
-      }
-      
-      console.log("User added as admin member");
+      // Add the creator as an admin member
+      await addUserAsAdmin(group.id, user.id);
       
       toast({
         title: "Group Created",
@@ -174,12 +80,7 @@ export function GroupCreationForm({ onSuccess }: GroupCreationFormProps) {
       queryClient.invalidateQueries({ queryKey: ['userGroups'] });
       
       // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        targetAmount: 0,
-        endDate: addMonths(new Date(), 3),
-      });
+      setFormData(getInitialFormData());
       
       // Call onSuccess callback if provided
       if (onSuccess) {
