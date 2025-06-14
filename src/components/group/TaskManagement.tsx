@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
-  const [taskAssignee, setTaskAssignee] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState("unassigned");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -102,7 +103,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
       // Get assignee names
       const tasksWithNames = await Promise.all((data || []).map(async (task) => {
-        if (task.assignee_id) {
+        if (task.assignee_id && task.assignee_id !== 'unassigned') {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('full_name')
@@ -136,7 +137,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   const resetForm = () => {
     setTaskTitle("");
     setTaskDescription("");
-    setTaskAssignee("");
+    setTaskAssignee("unassigned");
     setTaskDueDate("");
     setEditingTask(null);
   };
@@ -166,7 +167,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         title: taskTitle,
         description: taskDescription,
         group_id: groupId,
-        assignee_id: taskAssignee || null,
+        assignee_id: taskAssignee === "unassigned" ? null : taskAssignee,
         due_date: taskDueDate || null
       });
 
@@ -176,7 +177,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
           title: taskTitle,
           description: taskDescription,
           group_id: groupId,
-          assignee_id: taskAssignee || null,
+          assignee_id: taskAssignee === "unassigned" ? null : taskAssignee,
           due_date: taskDueDate || null
         });
 
@@ -209,7 +210,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     setEditingTask(task);
     setTaskTitle(task.title);
     setTaskDescription(task.description || "");
-    setTaskAssignee(task.assignee_id || "");
+    setTaskAssignee(task.assignee_id || "unassigned");
     setTaskDueDate(task.due_date || "");
     setEditDialogOpen(true);
   };
@@ -232,7 +233,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         .update({
           title: taskTitle,
           description: taskDescription,
-          assignee_id: taskAssignee || null,
+          assignee_id: taskAssignee === "unassigned" ? null : taskAssignee,
           due_date: taskDueDate || null
         })
         .eq('id', editingTask.id);
@@ -373,7 +374,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
                 <SelectValue placeholder="Assign to..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {members.map(member => (
                   <SelectItem key={member.member_id} value={member.member_id}>
                     {member.profiles?.full_name || 'Unknown'}
