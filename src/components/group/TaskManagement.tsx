@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, FileText, Check, X, Calendar } from "lucide-react";
+import { Plus, FileText, Calendar, Trash2, Edit } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,6 +26,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Task } from "@/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TaskManagementProps {
   groupId: string;
@@ -37,11 +49,13 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -69,7 +83,6 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
   const fetchTasks = async () => {
     try {
-      // First get all tasks
       const { data, error } = await supabase
         .from('tasks')
         .select(`*`)
@@ -78,7 +91,6 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
       if (error) throw error;
 
-      // For tasks with assignees, get their names in a separate query
       const tasksWithNames = await Promise.all((data || []).map(async (task) => {
         if (task.assignee_id) {
           const { data: profileData } = await supabase
@@ -111,8 +123,23 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     }
   };
 
+  const resetForm = () => {
+    setTaskTitle("");
+    setTaskDescription("");
+    setTaskAssignee("");
+    setTaskDueDate("");
+    setEditingTask(null);
+  };
+
   const handleCreateTask = async () => {
-    if (!taskTitle.trim()) return;
+    if (!taskTitle.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Task title is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -133,15 +160,63 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         description: "Task created successfully",
       });
       
-      setTaskTitle("");
-      setTaskDescription("");
-      setTaskAssignee("");
-      setTaskDueDate("");
+      resetForm();
       setDialogOpen(false);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to create task",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setTaskTitle(task.title);
+    setTaskDescription(task.description || "");
+    setTaskAssignee(task.assignee_id || "");
+    setTaskDueDate(task.due_date || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTask || !taskTitle.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Task title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          title: taskTitle,
+          description: taskDescription,
+          assignee_id: taskAssignee || null,
+          due_date: taskDueDate || null
+        })
+        .eq('id', editingTask.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Task updated successfully",
+      });
+      
+      resetForm();
+      setEditDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update task",
         variant: "destructive",
       });
     } finally {
@@ -165,6 +240,11 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
             : task
         )
       );
+
+      toast({
+        title: "Success",
+        description: `Task marked as ${!currentStatus ? 'completed' : 'incomplete'}`,
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -174,7 +254,124 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     }
   };
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete task",
+        variant: "destructive",
+      });
+    }
+  };
+
   const canCreateTasks = isAdmin || isTreasurer;
+  const canEditTasks = isAdmin || isTreasurer;
+
+  const TaskDialog = ({ 
+    open, 
+    onOpenChange, 
+    title, 
+    onSubmit, 
+    submitText 
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: string;
+    onSubmit: () => void;
+    submitText: string;
+  }) => (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            {editingTask ? "Update task details" : "Assign responsibilities to group members"}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              placeholder="Task title"
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Describe the task..."
+              value={taskDescription}
+              onChange={(e) => setTaskDescription(e.target.value)}
+              rows={3}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="assignee">Assignee</Label>
+            <Select value={taskAssignee} onValueChange={setTaskAssignee}>
+              <SelectTrigger>
+                <SelectValue placeholder="Assign to..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {members.map(member => (
+                  <SelectItem key={member.member_id} value={member.member_id}>
+                    {member.profiles?.full_name || 'Unknown'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="due-date">Due Date</Label>
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+              <Input
+                id="due-date"
+                type="date"
+                value={taskDueDate}
+                onChange={(e) => setTaskDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => {
+            onOpenChange(false);
+            resetForm();
+          }}>
+            Cancel
+          </Button>
+          <Button onClick={onSubmit} disabled={isSubmitting || !taskTitle.trim()}>
+            <FileText className="h-4 w-4 mr-2" />
+            {isSubmitting ? "Saving..." : submitText}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <Card className="p-6">
@@ -189,120 +386,130 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
                 Create Task
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Task</DialogTitle>
-                <DialogDescription>
-                  Assign responsibilities to group members
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Task title"
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe the task..."
-                    value={taskDescription}
-                    onChange={(e) => setTaskDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="assignee">Assignee</Label>
-                  <Select value={taskAssignee} onValueChange={setTaskAssignee}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Assign to..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
-                      {members.map(member => (
-                        <SelectItem key={member.member_id} value={member.member_id}>
-                          {member.profiles?.full_name || 'Unknown'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="due-date">Due Date</Label>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Input
-                      id="due-date"
-                      type="date"
-                      value={taskDueDate}
-                      onChange={(e) => setTaskDueDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateTask} disabled={isSubmitting || !taskTitle.trim()}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Creating..." : "Create Task"}
-                </Button>
-              </div>
-            </DialogContent>
+            <TaskDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              title="Create New Task"
+              onSubmit={handleCreateTask}
+              submitText="Create Task"
+            />
           </Dialog>
         )}
       </div>
       
       <div className="space-y-4">
         {loading ? (
-          <p className="text-center text-muted-foreground">Loading tasks...</p>
+          <p className="text-center text-muted-foreground py-8">Loading tasks...</p>
         ) : tasks.length === 0 ? (
-          <p className="text-center text-muted-foreground">No tasks created yet</p>
+          <div className="text-center py-8">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No tasks created yet</p>
+            {canCreateTasks && (
+              <p className="text-sm text-muted-foreground mt-2">Create your first task to get started</p>
+            )}
+          </div>
         ) : (
-          tasks.map((task) => (
-            <div
-              key={task.id}
-              className={`flex items-start p-3 rounded-lg border ${
-                task.is_completed ? 'bg-muted/40' : ''
-              }`}
-            >
-              <Checkbox
-                checked={task.is_completed}
-                onCheckedChange={() => handleToggleComplete(task.id, task.is_completed)}
-                className="mt-1"
-              />
-              <div className="ml-3 flex-1">
-                <h4 className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                  {task.title}
-                </h4>
-                {task.description && (
-                  <p className={`text-sm mt-1 ${task.is_completed ? 'text-muted-foreground' : ''}`}>
-                    {task.description}
-                  </p>
-                )}
-                <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                  <span>Assigned to: {task.assignee_name}</span>
-                  {task.due_date && (
-                    <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                  )}
+          tasks.map((task) => {
+            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !task.is_completed;
+            
+            return (
+              <div
+                key={task.id}
+                className={`flex items-start p-4 rounded-lg border transition-colors ${
+                  task.is_completed 
+                    ? 'bg-muted/40 border-muted' 
+                    : isOverdue 
+                    ? 'bg-red-50 border-red-200' 
+                    : 'bg-background border-border hover:bg-muted/20'
+                }`}
+              >
+                <Checkbox
+                  checked={task.is_completed}
+                  onCheckedChange={() => handleToggleComplete(task.id, task.is_completed)}
+                  className="mt-1"
+                />
+                <div className="ml-3 flex-1">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                        {isOverdue && (
+                          <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                            Overdue
+                          </span>
+                        )}
+                      </h4>
+                      {task.description && (
+                        <p className={`text-sm mt-1 ${task.is_completed ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                          {task.description}
+                        </p>
+                      )}
+                      <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+                        <span>Assigned to: <span className="font-medium">{task.assignee_name}</span></span>
+                        {task.due_date && (
+                          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                            Due: {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {canEditTasks && (
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTask(task)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      <TaskDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        title="Edit Task"
+        onSubmit={handleUpdateTask}
+        submitText="Update Task"
+      />
     </Card>
   );
 }
