@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,7 +91,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         .from('tasks')
         .select('*')
         .eq('group_id', groupId)
-        .order('due_date', { ascending: true, nullsLast: true });
+        .order('due_date', { ascending: true, nullsFirst: false });
 
       if (error) {
         console.error('Error fetching tasks:', error);

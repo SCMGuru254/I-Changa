@@ -259,10 +259,14 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
               </div>
               <div className="flex items-center gap-2">
                 {member.role === 'admin' && (
-                  <Shield className="h-4 w-4 text-yellow-500" title="Admin" />
+                  <div title="Admin">
+                    <Shield className="h-4 w-4 text-yellow-500" />
+                  </div>
                 )}
                 {member.role === 'treasurer' && (
-                  <Shield className="h-4 w-4 text-blue-500" title="Treasurer" />
+                  <div title="Treasurer">
+                    <Shield className="h-4 w-4 text-blue-500" />
+                  </div>
                 )}
                 {isAdmin && (
                   <Select 
