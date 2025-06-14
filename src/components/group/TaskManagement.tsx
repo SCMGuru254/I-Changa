@@ -61,6 +61,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!groupId) return;
     fetchTasks();
     
     // Set up realtime subscription
@@ -72,6 +73,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         table: 'tasks',
         filter: `group_id=eq.${groupId}`
       }, () => {
+        console.log('Task updated, refetching...');
         fetchTasks();
       })
       .subscribe();
@@ -82,15 +84,24 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   }, [groupId]);
 
   const fetchTasks = async () => {
+    if (!groupId) return;
+    
     try {
+      console.log('Fetching tasks for group:', groupId);
       const { data, error } = await supabase
         .from('tasks')
-        .select(`*`)
+        .select('*')
         .eq('group_id', groupId)
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true, nullsLast: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
 
+      console.log('Tasks fetched:', data);
+
+      // Get assignee names
       const tasksWithNames = await Promise.all((data || []).map(async (task) => {
         if (task.assignee_id) {
           const { data: profileData } = await supabase
@@ -111,14 +122,14 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
       }));
 
       setTasks(tasksWithNames);
-      setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching tasks:', error);
       toast({
         title: "Error",
-        description: "Failed to load tasks. Please try again.",
+        description: "Failed to load tasks: " + (error.message || 'Unknown error'),
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -141,8 +152,25 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
       return;
     }
     
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
+      console.log('Creating task with data:', {
+        title: taskTitle,
+        description: taskDescription,
+        group_id: groupId,
+        assignee_id: taskAssignee || null,
+        due_date: taskDueDate || null
+      });
+
       const { error } = await supabase
         .from('tasks')
         .insert({
@@ -153,8 +181,12 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
           due_date: taskDueDate || null
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating task:', error);
+        throw error;
+      }
 
+      console.log('Task created successfully');
       toast({
         title: "Success",
         description: "Task created successfully",
@@ -163,6 +195,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
       resetForm();
       setDialogOpen(false);
     } catch (error: any) {
+      console.error('Create task error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create task",
@@ -194,6 +227,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     
     setIsSubmitting(true);
     try {
+      console.log('Updating task:', editingTask.id);
       const { error } = await supabase
         .from('tasks')
         .update({
@@ -204,8 +238,12 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         })
         .eq('id', editingTask.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating task:', error);
+        throw error;
+      }
 
+      console.log('Task updated successfully');
       toast({
         title: "Success",
         description: "Task updated successfully",
@@ -214,6 +252,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
       resetForm();
       setEditDialogOpen(false);
     } catch (error: any) {
+      console.error('Update task error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update task",
@@ -226,26 +265,24 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
   const handleToggleComplete = async (taskId: string, currentStatus: boolean) => {
     try {
+      console.log('Toggling task completion:', taskId, !currentStatus);
       const { error } = await supabase
         .from('tasks')
         .update({ is_completed: !currentStatus })
         .eq('id', taskId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error toggling task:', error);
+        throw error;
+      }
 
-      setTasks(prev => 
-        prev.map(task => 
-          task.id === taskId 
-            ? { ...task, is_completed: !currentStatus } 
-            : task
-        )
-      );
-
+      console.log('Task completion toggled successfully');
       toast({
         title: "Success",
         description: `Task marked as ${!currentStatus ? 'completed' : 'incomplete'}`,
       });
     } catch (error: any) {
+      console.error('Toggle task error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update task",
@@ -256,20 +293,24 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
 
   const handleDeleteTask = async (taskId: string) => {
     try {
+      console.log('Deleting task:', taskId);
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting task:', error);
+        throw error;
+      }
 
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      
+      console.log('Task deleted successfully');
       toast({
         title: "Success",
         description: "Task deleted successfully",
       });
     } catch (error: any) {
+      console.error('Delete task error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete task",
@@ -333,7 +374,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
                 <SelectValue placeholder="Assign to..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="">Unassigned</SelectItem>
                 {members.map(member => (
                   <SelectItem key={member.member_id} value={member.member_id}>
                     {member.profiles?.full_name || 'Unknown'}
@@ -373,6 +414,17 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
     </Dialog>
   );
 
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Group Tasks</h3>
+        </div>
+        <p className="text-center text-muted-foreground py-8">Loading tasks...</p>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -398,9 +450,7 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
       </div>
       
       <div className="space-y-4">
-        {loading ? (
-          <p className="text-center text-muted-foreground py-8">Loading tasks...</p>
-        ) : tasks.length === 0 ? (
+        {tasks.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No tasks created yet</p>

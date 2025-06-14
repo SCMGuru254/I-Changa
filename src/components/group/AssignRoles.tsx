@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,15 +38,29 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
+    if (!groupId || !memberId) {
+      toast({
+        title: "Error",
+        description: "Missing required information",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      console.log('Updating role for member:', memberId, 'to:', newRole);
       const { error } = await supabase
         .from('group_members')
         .update({ role: newRole })
         .eq('group_id', groupId)
         .eq('member_id', memberId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating role:', error);
+        throw error;
+      }
 
+      console.log('Role updated successfully');
       toast({
         title: "Success",
         description: "Member role updated successfully",
@@ -53,6 +68,7 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
       
       onMembersUpdated();
     } catch (error: any) {
+      console.error('Role update error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update role",
@@ -62,11 +78,20 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
   };
 
   const inviteMember = async () => {
-    if (!invitePhone.trim()) return;
+    if (!invitePhone.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Phone number is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsInviting(true);
     try {
-      // First, check if user exists
+      console.log('Inviting member with phone:', invitePhone);
+      
+      // First, check if user exists with this phone number
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -74,17 +99,13 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error checking profile:', profileError);
         throw profileError;
       }
 
       if (!profileData) {
         // User doesn't exist, create pending invitation
-        toast({
-          title: "Info",
-          description: "No user found with this phone number. They'll be added when they sign up.",
-        });
-        
-        const { error } = await supabase
+        const { error: inviteError } = await supabase
           .from('pending_invitations')
           .insert({
             group_id: groupId,
@@ -92,10 +113,36 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
             role: inviteRole
           });
           
-        if (error) throw error;
+        if (inviteError) {
+          console.error('Error creating pending invitation:', inviteError);
+          throw inviteError;
+        }
+
+        console.log('Pending invitation created');
+        toast({
+          title: "Invitation Sent",
+          description: "User will be added when they sign up with this phone number",
+        });
       } else {
-        // User exists, add to group
-        const { error } = await supabase
+        // User exists, check if already a member
+        const { data: existingMember } = await supabase
+          .from('group_members')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('member_id', profileData.id)
+          .single();
+
+        if (existingMember) {
+          toast({
+            title: "Already a Member",
+            description: "This user is already a member of the group",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Add user to group
+        const { error: memberError } = await supabase
           .from('group_members')
           .insert({
             group_id: groupId,
@@ -103,19 +150,24 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
             role: inviteRole
           });
           
-        if (error) throw error;
+        if (memberError) {
+          console.error('Error adding group member:', memberError);
+          throw memberError;
+        }
+
+        console.log('Member added to group');
+        toast({
+          title: "Success",
+          description: "Member added to group successfully",
+        });
       }
 
-      toast({
-        title: "Success",
-        description: "Invitation sent successfully",
-      });
-      
       setInvitePhone("");
       setInviteRole("member");
       setDialogOpen(false);
       onMembersUpdated();
     } catch (error: any) {
+      console.error('Invite member error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to invite member",
@@ -174,11 +226,15 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
               </div>
               
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                  setDialogOpen(false);
+                  setInvitePhone("");
+                  setInviteRole("member");
+                }}>
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={inviteMember} disabled={isInviting}>
+                <Button onClick={inviteMember} disabled={isInviting || !invitePhone.trim()}>
                   <Check className="h-4 w-4 mr-2" />
                   {isInviting ? "Inviting..." : "Invite"}
                 </Button>
@@ -189,37 +245,44 @@ export function AssignRoles({ groupId, isAdmin, members, onMembersUpdated }: Ass
       </div>
       
       <div className="space-y-4">
-        {members.map((member) => (
-          <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent/10 rounded-lg">
-            <div>
-              <p className="font-medium">{member.profiles?.full_name || 'Unknown'}</p>
-              <p className="text-sm text-muted-foreground">{member.profiles?.phone_number || 'No phone'}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {member.role === 'admin' && (
-                <Shield className="h-4 w-4 text-yellow-500" />
-              )}
-              {member.role === 'treasurer' && (
-                <Shield className="h-4 w-4 text-blue-500" />
-              )}
-              {isAdmin && (
-                <Select 
-                  value={member.role} 
-                  onValueChange={(value) => handleRoleChange(member.member_id, value)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="treasurer">Treasurer</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+        {members.length === 0 ? (
+          <div className="text-center py-8">
+            <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No members found</p>
           </div>
-        ))}
+        ) : (
+          members.map((member) => (
+            <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent/10 rounded-lg">
+              <div>
+                <p className="font-medium">{member.profiles?.full_name || 'Unknown'}</p>
+                <p className="text-sm text-muted-foreground">{member.profiles?.phone_number || 'No phone'}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {member.role === 'admin' && (
+                  <Shield className="h-4 w-4 text-yellow-500" title="Admin" />
+                )}
+                {member.role === 'treasurer' && (
+                  <Shield className="h-4 w-4 text-blue-500" title="Treasurer" />
+                )}
+                {isAdmin && (
+                  <Select 
+                    value={member.role} 
+                    onValueChange={(value) => handleRoleChange(member.member_id, value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="treasurer">Treasurer</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </Card>
   );
