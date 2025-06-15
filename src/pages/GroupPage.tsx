@@ -152,9 +152,10 @@ export default function GroupPage() {
             
             <div className="space-y-8">
               <AssignRoles 
-                groupId={group.id} 
-                isAdmin={isAdmin} 
-                members={members || []} 
+                groupId={group.id}
+                groupName={group.name} // <-- Pass groupName so it matches AssignRolesProps
+                isAdmin={isAdmin}
+                members={members || []}
                 onMembersUpdated={refetchMembers}
               />
             </div>
