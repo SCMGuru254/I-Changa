@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { validationService } from "@/utils/validationService";
+import { useErrorHandler } from "@/utils/errorHandlingService";
+import { emailNotificationService } from "@/utils/emailNotificationService";
 
 interface TaskManagementProps {
   groupId: string;
@@ -59,6 +61,12 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { handleError, handleSuccess } = useErrorHandler({
+    component: 'TaskManagement',
+    action: 'task_operations',
+    userId: user?.id,
+    groupId
+  });
 
   useEffect(() => {
     if (!groupId) return;
@@ -143,21 +151,15 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   };
 
   const handleCreateTask = async () => {
-    if (!taskTitle.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Task title is required",
-        variant: "destructive",
-      });
+    // Validate task title
+    const titleValidation = validationService.validateTaskTitle(taskTitle);
+    if (!titleValidation.isValid) {
+      handleError(new Error(titleValidation.errors[0]));
       return;
     }
     
     if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create tasks",
-        variant: "destructive",
-      });
+      handleError(new Error("You must be logged in to create tasks"));
       return;
     }
     
@@ -181,26 +183,29 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
           due_date: taskDueDate || null
         });
 
-      if (error) {
-        console.error('Error creating task:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Task created successfully');
-      toast({
-        title: "Success",
-        description: "Task created successfully",
-      });
       
+      // Send notification if task is assigned
+      if (taskAssignee !== "unassigned") {
+        const assignee = members.find(m => m.member_id === taskAssignee);
+        if (assignee) {
+          await emailNotificationService.notifyTaskAssigned(
+            taskTitle,
+            assignee.profiles?.full_name || 'Unknown',
+            taskAssignee,
+            groupId
+          );
+        }
+      }
+
+      handleSuccess("Task created successfully");
       resetForm();
       setDialogOpen(false);
     } catch (error: any) {
       console.error('Create task error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create task",
-        variant: "destructive",
-      });
+      handleError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -216,12 +221,12 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
   };
 
   const handleUpdateTask = async () => {
-    if (!editingTask || !taskTitle.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Task title is required",
-        variant: "destructive",
-      });
+    if (!editingTask) return;
+    
+    // Validate task title
+    const titleValidation = validationService.validateTaskTitle(taskTitle);
+    if (!titleValidation.isValid) {
+      handleError(new Error(titleValidation.errors[0]));
       return;
     }
     
@@ -238,26 +243,29 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         })
         .eq('id', editingTask.id);
 
-      if (error) {
-        console.error('Error updating task:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Task updated successfully');
-      toast({
-        title: "Success",
-        description: "Task updated successfully",
-      });
       
+      // Send notification if assignee changed
+      if (taskAssignee !== "unassigned" && taskAssignee !== editingTask.assignee_id) {
+        const assignee = members.find(m => m.member_id === taskAssignee);
+        if (assignee) {
+          await emailNotificationService.notifyTaskAssigned(
+            taskTitle,
+            assignee.profiles?.full_name || 'Unknown',
+            taskAssignee,
+            groupId
+          );
+        }
+      }
+
+      handleSuccess("Task updated successfully");
       resetForm();
       setEditDialogOpen(false);
     } catch (error: any) {
       console.error('Update task error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update task",
-        variant: "destructive",
-      });
+      handleError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -271,23 +279,27 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         .update({ is_completed: !currentStatus })
         .eq('id', taskId);
 
-      if (error) {
-        console.error('Error toggling task:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Task completion toggled successfully');
-      toast({
-        title: "Success",
-        description: `Task marked as ${!currentStatus ? 'completed' : 'incomplete'}`,
-      });
+      
+      // Send notification if task is completed
+      if (!currentStatus) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && task.assignee_name !== 'Unassigned') {
+          await emailNotificationService.notifyTaskCompleted(
+            task.title,
+            task.assignee_name,
+            members,
+            groupId
+          );
+        }
+      }
+
+      handleSuccess(`Task marked as ${!currentStatus ? 'completed' : 'incomplete'}`);
     } catch (error: any) {
       console.error('Toggle task error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update task",
-        variant: "destructive",
-      });
+      handleError(error);
     }
   };
 
@@ -299,23 +311,13 @@ export function TaskManagement({ groupId, isAdmin, isTreasurer, members }: TaskM
         .delete()
         .eq('id', taskId);
 
-      if (error) {
-        console.error('Error deleting task:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Task deleted successfully');
-      toast({
-        title: "Success",
-        description: "Task deleted successfully",
-      });
+      handleSuccess("Task deleted successfully");
     } catch (error: any) {
       console.error('Delete task error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete task",
-        variant: "destructive",
-      });
+      handleError(error);
     }
   };
 
