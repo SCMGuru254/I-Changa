@@ -25,6 +25,7 @@ export function ContributionForm() {
     phoneNumber: "",
     amount: "",
     transactionId: "",
+    paymentMethod: "mpesa",
     confirmationMessage: "",
     screenshot: null as File | null,
   });
@@ -83,6 +84,7 @@ export function ContributionForm() {
         phoneNumber: "",
         amount: "",
         transactionId: "",
+        paymentMethod: "mpesa",
         confirmationMessage: "",
         screenshot: null,
       });
@@ -107,6 +109,7 @@ export function ContributionForm() {
         phoneNumber: parsedMessage.phoneNumber,
         amount: parsedMessage.amount.toString(),
         transactionId: parsedMessage.transactionId,
+        paymentMethod: "mpesa",
       });
       toast({
         title: "Success",
@@ -144,7 +147,7 @@ export function ContributionForm() {
         title: 'Confirmation Submitted',
         description: 'Your manual confirmation has been submitted for admin review.',
       });
-      
+
       setFormData({
         ...formData,
         confirmationMessage: "",
@@ -224,7 +227,7 @@ export function ContributionForm() {
                 rows={4}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="screenshot">Screenshot (Optional)</Label>
               <Input
@@ -234,7 +237,7 @@ export function ContributionForm() {
                 onChange={(e) => setFormData({ ...formData, screenshot: e.target.files?.[0] || null })}
               />
             </div>
-            
+
             <Button type="submit" disabled={isSubmitting || !formData.confirmationMessage.trim()}>
               {isSubmitting ? "Submitting..." : "Submit Confirmation"}
             </Button>

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function Header() {
   const { signOut, user } = useAuth();
@@ -52,7 +53,7 @@ export function Header() {
         >
           {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
-        
+
         <Button
           variant="outline"
           size="icon"
@@ -61,14 +62,8 @@ export function Header() {
         >
           <BarChart3 className="h-5 w-5" />
         </Button>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-        >
-          <Bell className="h-5 w-5" />
-        </Button>
+
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

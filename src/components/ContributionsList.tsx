@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 const fetchContributions = async (): Promise<Contribution[]> => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
+
   // Dummy data for demonstration
   return [
     {
@@ -37,15 +37,25 @@ const fetchContributions = async (): Promise<Contribution[]> => {
   ];
 };
 
+import { DisputeDialog } from "@/components/contribution/DisputeDialog";
+import { AlertTriangle } from "lucide-react";
+
 export function ContributionsList() {
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [selectedContribution, setSelectedContribution] = useState<{ id: string, amount: number } | null>(null);
+
   const { data: contributions, isLoading, error } = useQuery({
     queryKey: ['contributions'],
     queryFn: fetchContributions,
   });
 
   const isAdmin = true; // Replace with actual admin check
+
+  const handleDispute = (contribution: { id: string, amount: number }) => {
+    setSelectedContribution(contribution);
+    setDisputeOpen(true);
+  };
 
   // Replace Supabase logic with placeholder functions
   const handleApproval = async (contributionId: string, isApproved: boolean) => {
@@ -56,7 +66,7 @@ export function ContributionsList() {
       toast({
         title: 'Approval Updated',
         description: `Contribution has been ${isApproved ? 'approved' : 'rejected'}.`,
-        variant: 'success',
+        // variant: 'success', // variant 'success' does not exist in default shadcn
       });
     } catch (error) {
       toast({
@@ -110,7 +120,7 @@ export function ContributionsList() {
 
       <div className="space-y-4">
         {filteredContributions.map((contribution) => (
-          <Card key={contribution.id} className="p-4 hover:shadow-md transition-shadow">
+          <Card key={contribution.id} className="p-4 hover:shadow-md transition-shadow relative group">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold">{contribution.contributorName}</h3>
@@ -128,17 +138,39 @@ export function ContributionsList() {
                 </p>
               </div>
             </div>
-            {isAdmin && (
-              <div className="flex space-x-2 mt-4">
-                <Button onClick={() => handleApproval(contribution.id, true)}>Approve</Button>
-                <Button onClick={() => handleApproval(contribution.id, false)} variant="destructive">
-                  Reject
-                </Button>
-              </div>
-            )}
+
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => handleDispute({ id: contribution.id, amount: contribution.amount })}
+              >
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Dispute
+              </Button>
+
+              {isAdmin && (
+                <>
+                  <Button size="sm" onClick={() => handleApproval(contribution.id, true)}>Approve</Button>
+                  <Button size="sm" onClick={() => handleApproval(contribution.id, false)} variant="destructive">
+                    Reject
+                  </Button>
+                </>
+              )}
+            </div>
           </Card>
         ))}
       </div>
+
+      {selectedContribution && (
+        <DisputeDialog
+          isOpen={disputeOpen}
+          onClose={() => setDisputeOpen(false)}
+          contributionId={selectedContribution.id}
+          currentAmount={selectedContribution.amount}
+        />
+      )}
     </div>
   );
 }

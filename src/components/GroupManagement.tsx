@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, FileDown } from "lucide-react";
 import generatePDF from "react-to-pdf";
-import { 
-  calculateRevenue, 
-  calculateTotalContributed, 
-  isTargetReached, 
-  formatCurrency 
+import {
+  calculateRevenue,
+  calculateTotalContributed,
+  isTargetReached,
+  formatCurrency
 } from "@/utils/contributionUtils";
+import { GroupSettings } from "./group/GroupSettings";
 
 interface GroupManagementProps {
   groupId: string;
@@ -26,13 +27,13 @@ interface GroupManagementProps {
   }>;
 }
 
-export function GroupManagement({ 
-  groupId, 
-  isAdmin, 
-  isTreasurer, 
+export function GroupManagement({
+  groupId,
+  isAdmin,
+  isTreasurer,
   targetAmount,
   endDate,
-  contributions 
+  contributions
 }: GroupManagementProps) {
   const { toast } = useToast();
   const [isLeaving, setIsLeaving] = useState(false);
@@ -117,17 +118,15 @@ export function GroupManagement({
             {isLeaving ? "Leaving..." : "Leave Group"}
           </Button>
 
-          {(isAdmin || isTreasurer) && (
-            <Button
-              variant="outline"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="flex items-center gap-2"
-            >
-              <FileDown className="h-4 w-4" />
-              {isExporting ? "Exporting..." : "Export Report"}
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="flex items-center gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            {isExporting ? "Exporting..." : "Export Report"}
+          </Button>
         </div>
 
         {isAdmin && (
@@ -162,34 +161,43 @@ export function GroupManagement({
           </div>
         </div>
 
-        {/* Hidden element for PDF export */}
-        <div ref={reportRef} className="hidden">
-          <div className="p-8">
-            <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
-            <div className="mb-4">
-              <p>Total Contributed: {formatCurrency(totalContributed)}</p>
-              <p>Target Amount: {formatCurrency(targetAmount)}</p>
-              <p>Total Revenue Generated: {formatCurrency(revenue)}</p>
-              {targetReached && <p className="text-green-600 font-bold">Target Successfully Reached!</p>}
-            </div>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border p-2">Contributor</th>
-                  <th className="border p-2">Amount</th>
-                  <th className="border p-2">Date</th>
+        {isAdmin && (
+          <div className="mt-8 border-t pt-8">
+            <GroupSettings groupId={groupId} isOwner={isAdmin} />
+          </div>
+        )}
+      </div>
+
+      {/* Hidden element for PDF export */}
+      <div ref={reportRef} className="hidden">
+        <div className="p-8">
+          <h1 className="text-2xl font-bold mb-6">Group Contributions Report</h1>
+          <div className="mb-4">
+            <p>Total Contributed: {formatCurrency(totalContributed)}</p>
+            <p>Target Amount: {formatCurrency(targetAmount)}</p>
+            <p>Total Revenue Generated: {formatCurrency(revenue)}</p>
+            {targetReached && <p className="text-green-600 font-bold">Target Successfully Reached!</p>}
+          </div>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border p-2 text-left">Contributor</th>
+                <th className="border p-2 text-right">Amount</th>
+                <th className="border p-2 text-right">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contributions.map((contribution, index) => (
+                <tr key={index} className="border-b">
+                  <td className="border p-2">{contribution.contributorName}</td>
+                  <td className="border p-2 text-right">{formatCurrency(contribution.amount)}</td>
+                  <td className="border p-2 text-right">{new Date(contribution.date).toLocaleDateString()}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {contributions.map((contribution, index) => (
-                  <tr key={index}>
-                    <td className="border p-2">{contribution.contributorName}</td>
-                    <td className="border p-2">{formatCurrency(contribution.amount)}</td>
-                    <td className="border p-2">{new Date(contribution.date).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-8 text-sm text-gray-500">
+            <p>Generated by iChanga on {new Date().toLocaleDateString()}</p>
           </div>
         </div>
       </div>

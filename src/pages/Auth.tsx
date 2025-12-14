@@ -103,34 +103,59 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex w-full relative overflow-hidden">
+      {/* Background Image - Visible as split on Desktop, Full background on Mobile */}
+      <div className="absolute inset-0 lg:static lg:w-1/2 bg-black">
+        <div className="absolute inset-0">
+          <img
+            src="/login-bg.png"
+            alt="Community Trust"
+            className="w-full h-full object-cover opacity-60 lg:opacity-80 transition-opacity"
+          />
+          {/* Mobile Overlay: Heavy Blur & Darken */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm lg:backdrop-blur-none lg:bg-gradient-to-t lg:from-black/80 lg:via-black/40 lg:to-transparent" />
+        </div>
+
+        {/* Desktop Text Layout */}
+        <div className="relative z-10 w-full h-full hidden lg:flex flex-col justify-end p-12 text-white">
+          <h2 className="text-4xl font-bold mb-2">Tuko Pamoja | iChanga</h2>
+          <p className="text-lg text-gray-200">
+            Empowering communities to grow together. Build trust, track savings, and secure your future.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Auth Form */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
+        className="w-full lg:w-1/2 flex items-center justify-center p-8 relative z-20"
       >
-        <Card className="w-full max-w-md p-8">
-          <div className="text-center mb-6">
-            <motion.img
-              src="/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png"
-              alt="Trust Circle Logo"
-              className="w-16 h-16 mx-auto mb-4 object-contain bg-gray-50 rounded-full"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-            />
-            <h1 className="text-2xl font-bold">
-              {isSignUp ? "Join Trust Circle" : "Welcome Back"}
+        <Card className="w-full max-w-md p-8 border-none shadow-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-md lg:bg-transparent lg:shadow-none">
+          <div className="text-center mb-8">
+            <div className="mx-auto mb-6 w-24 h-24 rounded-full overflow-hidden shadow-xl border-4 border-primary/20 bg-white">
+              <img
+                src="/app-icon.jpg"
+                alt="iChanga Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Mobile-visible Slogan */}
+            <h2 className="lg:hidden text-xl font-bold text-primary mb-2">Tuko Pamoja | iChanga</h2>
+
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isSignUp ? "Join the Circle" : "Welcome Back"}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {isSignUp ? "Create your account to get started" : "Sign in to your account"}
+              {isSignUp ? "Start your journey to financial freedom" : "Sign in to access your groups"}
             </p>
           </div>
 
           <div className="space-y-4">
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full h-11 bg-white/90 hover:bg-white dark:bg-black/90 dark:hover:bg-black border-transparent"
               onClick={handleGoogleAuth}
               disabled={isGoogleLoading}
             >
@@ -159,12 +184,12 @@ export default function Auth() {
               Continue with Google
             </Button>
 
-            <div className="relative">
+            <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                <span className="bg-white/90 dark:bg-black/90 px-3 py-1 text-gray-900 dark:text-gray-100 font-semibold rounded-full shadow-sm border">Or continue with email</span>
               </div>
             </div>
 
@@ -176,6 +201,7 @@ export default function Auth() {
                   exit={{ opacity: 0, height: 0 }}
                 >
                   <Input
+                    className="h-11 bg-white/90 dark:bg-black/90 border-transparent focus:border-primary"
                     placeholder="Full Name"
                     value={formData.fullName}
                     onChange={(e) =>
@@ -186,13 +212,15 @@ export default function Auth() {
                 </motion.div>
               )}
               <Input
+                className="h-11 bg-white/90 dark:bg-black/90 border-transparent focus:border-primary"
                 type="email"
-                placeholder="Email"
+                placeholder="Email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
               />
               <Input
+                className="h-11 bg-white/90 dark:bg-black/90 border-transparent focus:border-primary"
                 type="password"
                 placeholder="Password"
                 value={formData.password}
@@ -200,30 +228,30 @@ export default function Auth() {
                 required
                 minLength={6}
               />
-              <Button className="w-full" type="submit" disabled={isLoading}>
+              <Button className="w-full h-11 text-base shadow-lg" type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isSignUp ? "Creating Account..." : "Signing In..."}
                   </>
                 ) : (
-                  isSignUp ? "Create Account" : "Sign In"
+                  isSignUp ? "Create Admin Account" : "Sign In"
                 )}
               </Button>
             </form>
-          </div>
 
-          <p className="text-center mt-6">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:underline transition-colors"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Need an account? Sign up"}
-            </button>
-          </p>
+            <p className="text-center mt-8 text-sm">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-primary hover:underline transition-colors font-medium"
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "New here? Create an account"}
+              </button>
+            </p>
+          </div>
         </Card>
       </motion.div>
     </div>

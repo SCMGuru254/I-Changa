@@ -18,21 +18,23 @@ import { Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+import { Users, TrendingUp, ShieldCheck } from "lucide-react";
+
 const onboardingSteps = [
   {
     title: "Welcome to Trust Circle",
     description: "Your trusted companion for group savings and contributions",
-    image: "/lovable-uploads/b7757f32-448d-43a6-b28e-6cc15e143742.png",
+    image: "/app-icon.jpg",
   },
   {
     title: "Create & Join Groups",
     description: "Start or join savings groups with people you trust",
-    image: "/lovable-uploads/2f360fe2-d870-4512-adae-3963eaafdac9.png",
+    icon: Users,
   },
   {
     title: "Track Contributions",
     description: "Monitor group savings and contributions in real-time",
-    image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
+    icon: TrendingUp,
   },
 ];
 
@@ -71,8 +73,8 @@ export default function Onboarding() {
           <Header />
 
           <div className="flex-1 flex items-center justify-center my-8">
-            <Carousel 
-              className="w-full max-w-lg" 
+            <Carousel
+              className="w-full max-w-lg"
               opts={{
                 align: "start",
                 loop: true,

@@ -1,8 +1,14 @@
 
 -- First, create the user roles system
-CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+        CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
+    END IF;
+END
+$$;
 
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     role app_role NOT NULL,
@@ -30,7 +36,7 @@ $$;
 
 -- Now create all the other tables without the problematic audit logs policy
 -- Create activities table for tracking user actions
-CREATE TABLE public.activities (
+CREATE TABLE IF NOT EXISTS public.activities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
@@ -42,7 +48,7 @@ CREATE TABLE public.activities (
 );
 
 -- Create notifications table for persistent notifications
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -54,7 +60,7 @@ CREATE TABLE public.notifications (
 );
 
 -- Create achievements table for gamification
-CREATE TABLE public.achievements (
+CREATE TABLE IF NOT EXISTS public.achievements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL,
@@ -64,7 +70,7 @@ CREATE TABLE public.achievements (
 );
 
 -- Create user_achievements table
-CREATE TABLE public.user_achievements (
+CREATE TABLE IF NOT EXISTS public.user_achievements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   achievement_id UUID REFERENCES achievements(id) ON DELETE CASCADE,
@@ -73,7 +79,7 @@ CREATE TABLE public.user_achievements (
 );
 
 -- Create audit_logs table for tracking important actions
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   action TEXT NOT NULL,
@@ -90,11 +96,13 @@ CREATE TABLE public.audit_logs (
 INSERT INTO storage.buckets (id, name, public) VALUES 
   ('avatars', 'avatars', true),
   ('documents', 'documents', false),
-  ('audio', 'audio', false);
+  ('audio', 'audio', false)
+ON CONFLICT (id) DO NOTHING;
 
 -- Add RLS policies for activities
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view activities in their groups" ON public.activities;
 CREATE POLICY "Users can view activities in their groups" ON public.activities
 FOR SELECT USING (
   user_id = auth.uid() OR 
@@ -105,15 +113,18 @@ FOR SELECT USING (
   )
 );
 
+DROP POLICY IF EXISTS "Users can create activities" ON public.activities;
 CREATE POLICY "Users can create activities" ON public.activities
 FOR INSERT WITH CHECK (user_id = auth.uid());
 
 -- Add RLS policies for notifications
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their notifications" ON public.notifications;
 CREATE POLICY "Users can view their notifications" ON public.notifications
 FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their notifications" ON public.notifications;
 CREATE POLICY "Users can update their notifications" ON public.notifications
 FOR UPDATE USING (user_id = auth.uid());
 
@@ -121,28 +132,34 @@ FOR UPDATE USING (user_id = auth.uid());
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view achievements" ON public.achievements;
 CREATE POLICY "Anyone can view achievements" ON public.achievements
 FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Users can view their achievements" ON public.user_achievements;
 CREATE POLICY "Users can view their achievements" ON public.user_achievements
 FOR SELECT USING (user_id = auth.uid());
 
 -- Add RLS policies for audit logs (now with proper user_roles reference)
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can view all audit logs" ON public.audit_logs;
 CREATE POLICY "Admins can view all audit logs" ON public.audit_logs
 FOR SELECT USING (public.has_role(auth.uid(), 'admin'::app_role));
 
 -- Storage policies for avatars bucket
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects
 FOR SELECT USING (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
 CREATE POLICY "Users can upload their own avatar" ON storage.objects
 FOR INSERT WITH CHECK (
   bucket_id = 'avatars' AND 
   auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
 CREATE POLICY "Users can update their own avatar" ON storage.objects
 FOR UPDATE USING (
   bucket_id = 'avatars' AND 
@@ -150,6 +167,7 @@ FOR UPDATE USING (
 );
 
 -- Storage policies for documents bucket
+DROP POLICY IF EXISTS "Users can view documents in their groups" ON storage.objects;
 CREATE POLICY "Users can view documents in their groups" ON storage.objects
 FOR SELECT USING (
   bucket_id = 'documents' AND
@@ -160,6 +178,7 @@ FOR SELECT USING (
   )
 );
 
+DROP POLICY IF EXISTS "Users can upload documents to their groups" ON storage.objects;
 CREATE POLICY "Users can upload documents to their groups" ON storage.objects
 FOR INSERT WITH CHECK (
   bucket_id = 'documents' AND
@@ -176,7 +195,8 @@ INSERT INTO public.achievements (name, description, icon, points) VALUES
   ('Team Player', 'Joined 3 different groups', '👥', 20),
   ('Consistent Contributor', 'Made contributions for 7 consecutive days', '🔥', 50),
   ('Group Creator', 'Created your first group', '🏆', 30),
-  ('Helping Hand', 'Completed 5 tasks in groups', '✋', 25);
+  ('Helping Hand', 'Completed 5 tasks in groups', '✋', 25)
+ON CONFLICT (name) DO NOTHING;
 
 -- Create function to automatically create activity records
 CREATE OR REPLACE FUNCTION public.create_activity(

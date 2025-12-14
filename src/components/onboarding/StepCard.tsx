@@ -1,30 +1,25 @@
-import { motion } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { LucideIcon } from "lucide-react";
 
 interface StepCardProps {
   title: string;
   description: string;
-  image: string;
+  icon?: LucideIcon;
+  image?: string;
 }
 
-export function StepCard({ title, description, image }: StepCardProps) {
+export const StepCard = ({ title, description, icon: Icon, image }: StepCardProps) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="text-center p-6"
-    >
-      <div className="mb-8">
-        <motion.img
-          src={image}
-          alt={title}
-          className="w-64 h-64 mx-auto object-cover rounded-lg shadow-lg"
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.2 }}
-        />
+    <Card className="p-6 flex flex-col items-center text-center space-y-4 m-1">
+      <div className="w-48 h-48 bg-primary/5 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+        {image ? (
+          <img src={image} alt={title} className="w-full h-full object-cover" />
+        ) : (
+          Icon && <Icon className="w-24 h-24 text-primary" />
+        )}
       </div>
-      <h2 className="text-2xl font-semibold mb-4">{title}</h2>
+      <h3 className="text-2xl font-bold">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
-    </motion.div>
+    </Card>
   );
 }
