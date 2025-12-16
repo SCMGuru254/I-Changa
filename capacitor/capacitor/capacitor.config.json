@@ -1,0 +1,10 @@
+{
+  "appId": "com.ichanga.app",
+  "appName": "I-changa",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    }
+  }
+}
