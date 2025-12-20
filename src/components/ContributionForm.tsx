@@ -113,12 +113,12 @@ export function ContributionForm() {
       });
       toast({
         title: "Success",
-        description: "M-Pesa message parsed successfully",
+        description: "Mobile money message parsed successfully",
       });
     } else {
       toast({
         title: "Error",
-        description: "Could not parse M-Pesa message. Please check the format.",
+        description: "Could not parse mobile money message. Please check the format.",
         variant: "destructive",
       });
     }
@@ -191,7 +191,7 @@ export function ContributionForm() {
       <Tabs defaultValue="manual" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-          <TabsTrigger value="mpesa">M-Pesa Message</TabsTrigger>
+          <TabsTrigger value="mpesa">Mobile Money Message</TabsTrigger>
           <TabsTrigger value="confirmation">Manual Confirmation</TabsTrigger>
         </TabsList>
 

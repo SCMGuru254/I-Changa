@@ -35,13 +35,36 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: "Invalid Email",
+          description: "Please enter a valid email address (e.g., user@example.com)",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       if (isSignUp) {
+        // Validate full name for sign up
+        if (!formData.fullName.trim()) {
+          toast({
+            title: "Invalid Name",
+            description: "Please enter your full name",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
-          email: formData.email,
+          email: formData.email.toLowerCase().trim(),
           password: formData.password,
           options: {
             data: {
-              full_name: formData.fullName,
+              full_name: formData.fullName.trim(),
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -55,7 +78,7 @@ export default function Auth() {
         setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+          email: formData.email.toLowerCase().trim(),
           password: formData.password,
         });
 

@@ -29,7 +29,7 @@ export function OwnerWallet({ ownerName = 'SCMCoded', userRole = 'member' }: Own
       // For now, we'll just show a success message
       toast({
         title: "Withdrawal Initiated",
-        description: `${ownerName}, your withdrawal request has been processed. You'll receive an M-Pesa message shortly.`,
+        description: `${ownerName}, your withdrawal request has been processed. You'll receive a mobile money message shortly.`,
       });
     } catch (error) {
       toast({
@@ -56,7 +56,7 @@ export function OwnerWallet({ ownerName = 'SCMCoded', userRole = 'member' }: Own
           className="flex items-center gap-2"
         >
           <ArrowDownToLine className="h-4 w-4" />
-          {isWithdrawing ? "Processing..." : "Withdraw to M-Pesa"}
+          {isWithdrawing ? "Processing..." : "Withdraw to Mobile Money"}
         </Button>
       </div>
 
@@ -77,7 +77,7 @@ export function OwnerWallet({ ownerName = 'SCMCoded', userRole = 'member' }: Own
       </div>
 
       <div className="mt-6 text-sm text-muted-foreground">
-        <p>• Withdrawals are processed via M-Pesa within 24 hours</p>
+        <p>• Withdrawals are processed via mobile money within 24 hours</p>
         <p>• Minimum withdrawal amount: KES 100</p>
         <p>• Only the owner (SCMCoded) can access this wallet</p>
       </div>

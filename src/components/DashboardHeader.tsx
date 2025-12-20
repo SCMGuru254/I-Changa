@@ -10,7 +10,7 @@ export function DashboardHeader() {
         iChanga
       </h1>
       <p className="text-gray-600">
-        Simplified Group Contributions with M-Pesa Integration
+        Simplified Group Contributions with Mobile Money Integration
       </p>
       <p className="text-sm text-gray-500 mt-2">
         Secure • Fast • Reliable
