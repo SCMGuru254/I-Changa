@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'og-image.png'],
       manifest: {
-        name: 'iChanga Trust Circle',
+        name: 'iChanga',
         short_name: 'iChanga',
-        description: 'Trust-based savings groups digitalized.',
+        description: 'Tuko Pamoja - Secure Group Savings Made Simple',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

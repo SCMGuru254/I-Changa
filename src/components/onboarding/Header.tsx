@@ -8,8 +8,8 @@ export function Header() {
       className="text-center pt-8 flex flex-col items-center gap-4"
     >
       <motion.img
-        src="/lovable-uploads/4713051a-d1b2-4b5b-90e3-6df1a428dd07.png"
-        alt="Trust Circle Logo"
+        src="/app-icon.jpg"
+        alt="iChanga Logo"
         className="w-32 h-32 object-contain bg-gray-50 rounded-full"
         initial={{ scale: 0 }}
         animate={{ scale: 1, rotate: 360 }}
@@ -21,8 +21,8 @@ export function Header() {
         }}
       />
       <div>
-        <h1 className="text-4xl font-bold text-primary mb-2">Trust Circle</h1>
-        <p className="text-muted-foreground">Secure Group Savings Made Simple</p>
+        <h1 className="text-4xl font-bold text-primary mb-2">iChanga</h1>
+        <p className="text-muted-foreground">Tuko Pamoja - Secure Group Savings Made Simple</p>
       </div>
     </motion.div>
   );
