@@ -196,7 +196,7 @@ export function ImprovedOnboarding() {
           className="w-full" 
           onClick={() => {
             markStepCompleted('preferences');
-            handleSuccess('Welcome to Trust Circle!');
+            handleSuccess('Welcome to iChanga!');
             navigate('/dashboard');
           }}
         >
@@ -218,8 +218,8 @@ export function ImprovedOnboarding() {
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-center mb-2">Welcome to Trust Circle</h2>
-          <p className="text-muted-foreground text-center mb-4">Let's get you set up</p>
+          <h2 className="text-2xl font-bold text-center mb-2">Welcome to iChanga</h2>
+          <p className="text-muted-foreground text-center mb-4">Tuko Pamoja - Let's get you set up</p>
           <Progress value={progress} className="mb-2" />
           <p className="text-sm text-muted-foreground text-center">
             Step {currentStep + 1} of {steps.length}

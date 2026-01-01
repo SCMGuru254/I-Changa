@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupLeaderboard } from '@/components/GroupLeaderboard';
 import { ContributionAnalytics } from '@/components/ContributionAnalytics';
 import { AuditLogs } from '@/components/AuditLogs';
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Header } from "@/components/layout/Header";
 
 export default function GroupPage() {
   const { groupId } = useParams();
@@ -112,84 +114,87 @@ export default function GroupPage() {
   const isTreasurer = memberRole === 'treasurer';
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-8">
-      <GroupAgenda />
-      <DashboardStats />
-      
-      <Tabs defaultValue="contributions" className="w-full">
-        <TabsList className="grid grid-cols-3 lg:w-[400px] mb-6">
-          <TabsTrigger value="contributions">Contributions</TabsTrigger>
-          <TabsTrigger value="messaging">Messaging</TabsTrigger>
-          <TabsTrigger value="management">Management</TabsTrigger>
-        </TabsList>
+    <DashboardLayout>
+      <div className="container mx-auto py-8 px-4 space-y-8">
+        <Header />
+        <GroupAgenda />
+        <DashboardStats />
         
-        <TabsContent value="contributions" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <ContributionForm />
-              <ContributionsList />
+        <Tabs defaultValue="contributions" className="w-full">
+          <TabsList className="grid grid-cols-3 lg:w-[400px] mb-6">
+            <TabsTrigger value="contributions">Contributions</TabsTrigger>
+            <TabsTrigger value="messaging">Messaging</TabsTrigger>
+            <TabsTrigger value="management">Management</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="contributions" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <ContributionForm />
+                <ContributionsList />
+              </div>
+              
+              <div className="space-y-8">
+                <MemberLeaderboard />
+                <GroupManagement
+                  groupId={group.id}
+                  isAdmin={isAdmin}
+                  isTreasurer={isTreasurer}
+                  targetAmount={group.target_amount}
+                  endDate={group.end_date}
+                  contributions={contributions || []}
+                />
+              </div>
             </div>
-            
-            <div className="space-y-8">
-              <MemberLeaderboard />
-              <GroupManagement
-                groupId={group.id}
-                isAdmin={isAdmin}
-                isTreasurer={isTreasurer}
-                targetAmount={group.target_amount}
-                endDate={group.end_date}
-                contributions={contributions || []}
-              />
+          </TabsContent>
+          
+          <TabsContent value="messaging">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <MessageList groupId={group.id} />
+              </div>
+              
+              <div className="space-y-8">
+                <AssignRoles 
+                  groupId={group.id}
+                  groupName={group.name}
+                  isAdmin={isAdmin}
+                  members={members || []}
+                  onMembersUpdated={refetchMembers}
+                />
+              </div>
             </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="messaging">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <MessageList groupId={group.id} />
+          </TabsContent>
+          
+          <TabsContent value="management">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <TaskManagement 
+                  groupId={group.id} 
+                  isAdmin={isAdmin} 
+                  isTreasurer={isTreasurer} 
+                  members={members || []}
+                />
+              </div>
+              
+              <div className="space-y-8">
+                <GroupManagement
+                  groupId={group.id}
+                  isAdmin={isAdmin}
+                  isTreasurer={isTreasurer}
+                  targetAmount={group.target_amount}
+                  endDate={group.end_date}
+                  contributions={contributions || []}
+                />
+              </div>
             </div>
-            
-            <div className="space-y-8">
-              <AssignRoles 
-                groupId={group.id}
-                groupName={group.name} // <-- Pass groupName so it matches AssignRolesProps
-                isAdmin={isAdmin}
-                members={members || []}
-                onMembersUpdated={refetchMembers}
-              />
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="management">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <TaskManagement 
-                groupId={group.id} 
-                isAdmin={isAdmin} 
-                isTreasurer={isTreasurer} 
-                members={members || []}
-              />
-            </div>
-            
-            <div className="space-y-8">
-              <GroupManagement
-                groupId={group.id}
-                isAdmin={isAdmin}
-                isTreasurer={isTreasurer}
-                targetAmount={group.target_amount}
-                endDate={group.end_date}
-                contributions={contributions || []}
-              />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
 
-      <ContributionAnalytics />
-      <GroupLeaderboard />
-      <AuditLogs />
-    </div>
+        <ContributionAnalytics />
+        <GroupLeaderboard />
+        <AuditLogs />
+      </div>
+    </DashboardLayout>
   );
 }

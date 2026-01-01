@@ -22,8 +22,8 @@ import { Users, TrendingUp, ShieldCheck } from "lucide-react";
 
 const onboardingSteps = [
   {
-    title: "Welcome to Trust Circle",
-    description: "Your trusted companion for group savings and contributions",
+    title: "Welcome to iChanga",
+    description: "Tuko Pamoja - Your trusted companion for group savings",
     image: "/app-icon.jpg",
   },
   {
@@ -52,8 +52,8 @@ export default function Onboarding() {
   const handleTourComplete = () => {
     setShowGuidedTour(false);
     toast({
-      title: "Welcome to Trust Circle!",
-      description: "You're all set up and ready to start managing your contribution groups.",
+      title: "Welcome to iChanga!",
+      description: "Tuko Pamoja - You're all set up and ready to start managing your contribution groups.",
     });
     navigate("/dashboard");
   };

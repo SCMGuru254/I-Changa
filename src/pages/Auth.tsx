@@ -258,7 +258,7 @@ export default function Auth() {
                     {isSignUp ? "Creating Account..." : "Signing In..."}
                   </>
                 ) : (
-                  isSignUp ? "Create Admin Account" : "Sign In"
+                  isSignUp ? "Create Account" : "Sign In"
                 )}
               </Button>
             </form>
